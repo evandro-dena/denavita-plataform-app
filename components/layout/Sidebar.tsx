@@ -7,7 +7,7 @@ import { cn } from '@/lib/utils'
 const NAV = [
   { href: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
   { href: '/alunos', icon: Users, label: 'Alunos' },
-  { href: '/prescricoes', icon: UtensilsCrossed, label: 'Prescrições' },
+  { href: '/prescricoes', icon: UtensilsCrossed, label: 'Nutrição' },
   { href: '/receitas', icon: BookOpen, label: 'Receitas' },
   { href: '/configuracoes', icon: Settings, label: 'Configurações' },
 ]

@@ -31,6 +31,12 @@ export const mealPlanService = {
     }
   },
 
+  async deletePlan(id: string): Promise<void> {
+    await new Promise(r => setTimeout(r, 200))
+    const idx = MOCK_DIET_PLANS.findIndex(p => p.id === id)
+    if (idx >= 0) MOCK_DIET_PLANS.splice(idx, 1)
+  },
+
   async upsertMealPlan(plan: Partial<DietPlan>): Promise<DietPlan> {
     await new Promise(r => setTimeout(r, 500))
     const base = { ...MOCK_DIET_PLAN, ...plan, id: plan.id ?? String(Date.now()), updated_at: new Date().toISOString() }

@@ -102,6 +102,7 @@ export const MOCK_EXAMS: Record<string, Exam[]> = {
 export const MOCK_DIET_PLAN: DietPlan = {
   id: 'dp1', user_id: '1', nutritionist_id: 'nutri-1',
   name: 'Cutting Mulher 1800kcal',
+  type: 'alimentos',
   total_calories: 1800, total_protein: 140, total_carbs: 180, total_fat: 55,
   source: 'manual',
   meals: [
@@ -133,6 +134,7 @@ export const MOCK_DIET_PLANS: DietPlan[] = [
   {
     id: 'dp2', user_id: '', nutritionist_id: 'nutri-1',
     name: 'Low Carb 1600kcal',
+    type: 'textos_livres',
     total_calories: 1600, total_protein: 150, total_carbs: 80, total_fat: 70,
     source: 'ia',
     meals: [
@@ -146,6 +148,7 @@ export const MOCK_DIET_PLANS: DietPlan[] = [
   {
     id: 'dp3', user_id: '', nutritionist_id: 'nutri-1',
     name: 'Bulking Masculino 3000kcal',
+    type: 'alimentos',
     total_calories: 3000, total_protein: 200, total_carbs: 350, total_fat: 80,
     source: 'ia',
     meals: [
@@ -159,6 +162,7 @@ export const MOCK_DIET_PLANS: DietPlan[] = [
   {
     id: 'dp4', user_id: '', nutritionist_id: 'nutri-1',
     name: 'Manutenção Saúde 2000kcal',
+    type: 'textos_livres',
     total_calories: 2000, total_protein: 130, total_carbs: 240, total_fat: 65,
     source: 'manual',
     meals: [
@@ -171,6 +175,7 @@ export const MOCK_DIET_PLANS: DietPlan[] = [
   {
     id: 'dp5', user_id: '', nutritionist_id: 'nutri-1',
     name: 'Cetogênica 1700kcal',
+    type: 'alimentos',
     total_calories: 1700, total_protein: 120, total_carbs: 30, total_fat: 130,
     source: 'ia',
     meals: [

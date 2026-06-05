@@ -99,6 +99,7 @@ export interface Meal {
   time: string
   emoji: string
   substitution?: string
+  free_text?: string
   items: MealItem[]
 }
 
@@ -107,12 +108,16 @@ export interface DietPlan {
   user_id: string
   nutritionist_id: string
   name: string
+  type: 'alimentos' | 'textos_livres'
   total_calories: number
   total_protein: number
   total_carbs: number
   total_fat: number
   meals: Meal[]
   source: 'manual' | 'ia' | 'misto'
+  supplements?: string
+  manipulated?: string
+  shopping_list?: string
   notes?: string
   created_at: string
   updated_at: string
