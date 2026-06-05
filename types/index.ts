@@ -149,6 +149,38 @@ export interface Subscription {
   price: number
 }
 
+export type CampaignType =
+  | 'peso_feedback' | 'vencimento' | 'promocao' | 'cupom'
+  | 'dica' | 'video_aula' | 'personalizada'
+
+export type CampaignChannel = 'whatsapp' | 'app'
+
+export type CampaignAudience =
+  | 'todos' | 'melhores_resultados' | 'mais_tempo'
+  | 'vencendo_7d' | 'vencendo_15d' | 'vencendo_30d' | 'personalizado'
+
+export interface Campaign {
+  id: string
+  name: string
+  type: CampaignType
+  channels: CampaignChannel[]
+  audience: CampaignAudience
+  audience_count: number
+  status: 'rascunho' | 'agendado' | 'enviado'
+  schedule_type: 'imediato' | 'agendado' | 'recorrente'
+  scheduled_at?: string
+  recurrence?: 'diario' | 'semanal' | 'quinzenal' | 'mensal'
+  recurrence_weekday?: number
+  recurrence_time?: string
+  whatsapp_message: string
+  push_title: string
+  push_body: string
+  sent_count?: number
+  open_rate?: number
+  created_at: string
+  sent_at?: string
+}
+
 export interface DashboardStats {
   total_students: number
   active_students: number
