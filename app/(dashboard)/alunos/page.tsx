@@ -145,124 +145,133 @@ function AnamnesePanel({ studentId }: { studentId: string }) {
 // ─── Nutrição Panel ───────────────────────────────────────────────
 function NutricaoPanel({ student }: { student: Student }) {
   const qc = useQueryClient()
-  const { data: plan, isLoading } = useQuery({
-    queryKey: ['diet', student.id],
-    queryFn: () => mealPlanService.getMealPlan(student.id),
+  const [search, setSearch] = useState('')
+
+  const { data: allPlans = [], isLoading: loadingPlans } = useQuery({
+    queryKey: ['diet-plans-all'],
+    queryFn: () => mealPlanService.listAll(NUTRI_ID),
   })
 
-  const [active, setActive] = useState(false)
+  const { data: activePlanId, isLoading: loadingActive } = useQuery({
+    queryKey: ['diet-active', student.id],
+    queryFn: () => mealPlanService.getActivePlanId(student.id),
+  })
 
-  const saveDiet = useMutation({
-    mutationFn: (isActive: boolean) => {
-      void isActive
-      return mealPlanService.upsertMealPlan({ user_id: student.id, nutritionist_id: NUTRI_ID })
+  const activate = useMutation({
+    mutationFn: (planId: string | null) => mealPlanService.activateForStudent(planId, student.id),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['diet-active', student.id] })
+      qc.invalidateQueries({ queryKey: ['diet', student.id] })
     },
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ['diet', student.id] }); toast.success('Plano atualizado!') },
   })
 
-  const handleToggle = (val: boolean) => {
-    setActive(val)
-    saveDiet.mutate(val)
-    toast.success(val ? 'Plano ativado para o aluno!' : 'Plano desativado.')
+  const handleToggle = (planId: string, currentlyActive: boolean) => {
+    if (currentlyActive) {
+      activate.mutate(null)
+      toast.success('Plano desativado.')
+    } else {
+      activate.mutate(planId)
+      toast.success('Plano selecionado para o aluno!')
+    }
   }
 
-  if (isLoading) return (
-    <div className="p-5 flex flex-col gap-3">
-      {Array(3).fill(0).map((_, i) => <Skeleton key={i} className="h-10 rounded-xl" style={{ background: '#2A2A2A' }} />)}
-    </div>
+  const filtered = allPlans.filter(p =>
+    p.name.toLowerCase().includes(search.toLowerCase())
   )
 
-  if (!plan) return (
-    <div className="p-5 flex flex-col gap-4">
-      <div className="rounded-2xl border p-6 text-center" style={{ background: '#222222', borderColor: '#2A2A2A' }}>
-        <UtensilsCrossed size={32} className="mx-auto mb-3 opacity-30" style={{ color: '#888888' }} />
-        <p className="text-sm mb-1" style={{ color: '#888888' }}>Nenhum plano dietético criado ainda.</p>
-        <p className="text-xs" style={{ color: '#555555' }}>
-          Acesse a ficha do aluno para gerar um plano com IA ou criar manualmente.
-        </p>
-      </div>
-      <Link href={`/alunos/${student.id}?tab=prescricao`}>
-        <Button className="w-full font-semibold"
-          style={{ background: '#C8FF00', color: '#111111', borderRadius: '12px', fontFamily: 'Poppins, sans-serif' }}>
-          <Sparkles size={14} className="mr-2" />
-          Criar plano alimentar
-        </Button>
-      </Link>
-    </div>
-  )
+  const isLoading = loadingPlans || loadingActive
 
   return (
-    <div className="p-5 overflow-y-auto flex-1 flex flex-col gap-4">
-
-      {/* Activate toggle */}
-      <div className="flex items-center justify-between p-4 rounded-2xl border" style={{ background: '#222222', borderColor: '#2A2A2A' }}>
-        <div>
-          <p className="text-sm font-semibold" style={{ color: '#FFFFFF', fontFamily: 'Poppins, sans-serif' }}>
-            Plano ativo para o aluno
-          </p>
-          <p className="text-xs mt-0.5" style={{ color: '#888888' }}>
-            O aluno visualiza este plano no app
-          </p>
+    <div className="flex flex-col h-full">
+      {/* Search */}
+      <div className="px-4 pt-4 pb-3 flex-shrink-0">
+        <div className="relative">
+          <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2" style={{ color: '#555555' }} />
+          <input
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+            placeholder="Buscar plano..."
+            className="w-full pl-8 pr-3 py-2 rounded-xl border text-sm outline-none"
+            style={{ background: '#111111', color: '#FFFFFF', borderColor: '#2A2A2A' }}
+          />
         </div>
-        <Switch checked={active} onCheckedChange={handleToggle} />
-      </div>
-
-      {/* Plan summary */}
-      <div className="rounded-2xl border p-4" style={{ background: '#222222', borderColor: '#2A2A2A' }}>
-        <div className="flex items-center justify-between mb-3">
-          <span className="text-xs uppercase tracking-wide" style={{ color: '#555555' }}>Resumo do plano</span>
-          <Badge style={{
-            background: plan.source === 'ia' ? 'rgba(200,255,0,0.12)' : 'rgba(136,136,136,0.12)',
-            color: plan.source === 'ia' ? '#C8FF00' : '#888888',
-            border: 'none', borderRadius: '9999px', fontSize: '10px',
-          }}>
-            {plan.source === 'ia' ? '✦ Gerado por IA' : plan.source === 'manual' ? 'Manual' : 'Misto'}
-          </Badge>
-        </div>
-        <div className="grid grid-cols-2 gap-2 mb-3">
-          {[
-            { label: 'Calorias', value: `${plan.total_calories} kcal`, color: '#C8FF00' },
-            { label: 'Proteína', value: `${plan.total_protein}g`, color: '#C8FF00' },
-            { label: 'Carboidrato', value: `${plan.total_carbs}g`, color: '#F59E0B' },
-            { label: 'Gordura', value: `${plan.total_fat}g`, color: '#888888' },
-          ].map(m => (
-            <div key={m.label} className="rounded-xl p-3" style={{ background: '#1A1A1A' }}>
-              <p className="text-xs" style={{ color: '#555555' }}>{m.label}</p>
-              <p className="text-base font-bold mt-0.5" style={{ color: m.color, fontFamily: 'Poppins, sans-serif' }}>{m.value}</p>
-            </div>
-          ))}
-        </div>
-        <p className="text-xs" style={{ color: '#555555' }}>
-          Atualizado em {new Date(plan.updated_at).toLocaleDateString('pt-BR')}
+        <p className="text-xs mt-2" style={{ color: '#555555' }}>
+          {allPlans.length} plano{allPlans.length !== 1 ? 's' : ''} disponíveis
         </p>
       </div>
 
-      {/* Meals list */}
-      <div className="flex flex-col gap-2">
-        <p className="text-xs uppercase tracking-wide" style={{ color: '#555555' }}>Refeições ({plan.meals.length})</p>
-        {plan.meals.map(meal => {
-          const kcal = meal.items.reduce((a, i) => a + i.calories, 0)
-          return (
-            <div key={meal.id} className="flex items-center justify-between p-3 rounded-xl border" style={{ background: '#222222', borderColor: '#2A2A2A' }}>
-              <div className="flex items-center gap-2">
-                <span>{meal.emoji}</span>
-                <div>
-                  <p className="text-xs font-medium" style={{ color: '#FFFFFF' }}>{meal.name}</p>
-                  <p className="text-xs" style={{ color: '#555555' }}>{meal.time}</p>
+      {/* Plan list */}
+      <div className="flex-1 overflow-y-auto px-4 pb-4 flex flex-col gap-2">
+        {isLoading ? (
+          Array(4).fill(0).map((_, i) => (
+            <Skeleton key={i} className="h-20 rounded-2xl" style={{ background: '#222222' }} />
+          ))
+        ) : filtered.length === 0 ? (
+          <div className="text-center py-8" style={{ color: '#555555' }}>
+            <UtensilsCrossed size={28} className="mx-auto mb-2 opacity-30" />
+            <p className="text-sm">Nenhum plano encontrado.</p>
+          </div>
+        ) : (
+          filtered.map(plan => {
+            const isActive = activePlanId === plan.id
+            return (
+              <div
+                key={plan.id}
+                className="rounded-2xl border p-4 transition-all"
+                style={{
+                  background: isActive ? 'rgba(200,255,0,0.06)' : '#222222',
+                  borderColor: isActive ? 'rgba(200,255,0,0.4)' : '#2A2A2A',
+                }}
+              >
+                {/* Name + badge */}
+                <div className="flex items-start justify-between gap-2 mb-3">
+                  <p className="text-sm font-semibold leading-tight" style={{ color: '#FFFFFF', fontFamily: 'Poppins, sans-serif' }}>
+                    {plan.name}
+                  </p>
+                  <Badge style={{
+                    background: plan.source === 'ia' ? 'rgba(200,255,0,0.12)' : 'rgba(136,136,136,0.1)',
+                    color: plan.source === 'ia' ? '#C8FF00' : '#888888',
+                    border: 'none', borderRadius: '9999px', fontSize: '10px', flexShrink: 0,
+                  }}>
+                    {plan.source === 'ia' ? '✦ IA' : 'Manual'}
+                  </Badge>
+                </div>
+
+                {/* Macros mini */}
+                <div className="flex items-center gap-3 mb-3 text-xs" style={{ color: '#888888' }}>
+                  <span style={{ color: '#C8FF00', fontWeight: 600 }}>{plan.total_calories} kcal</span>
+                  <span>P {plan.total_protein}g</span>
+                  <span>C {plan.total_carbs}g</span>
+                  <span>G {plan.total_fat}g</span>
+                </div>
+
+                {/* Toggle */}
+                <div className="flex items-center justify-between">
+                  <span
+                    className="text-sm font-semibold"
+                    style={{ color: isActive ? '#C8FF00' : '#555555' }}
+                  >
+                    {isActive ? 'Selecionado' : 'Oculto'}
+                  </span>
+                  <Switch
+                    checked={isActive}
+                    onCheckedChange={() => handleToggle(plan.id, isActive)}
+                    disabled={activate.isPending}
+                  />
                 </div>
               </div>
-              <span className="text-xs font-semibold" style={{ color: '#C8FF00' }}>{kcal} kcal</span>
-            </div>
-          )
-        })}
-      </div>
+            )
+          })
+        )}
 
-      <Link href={`/alunos/${student.id}?tab=prescricao`}>
-        <Button variant="outline" className="w-full font-semibold"
-          style={{ borderColor: 'rgba(200,255,0,0.3)', color: '#C8FF00', background: 'rgba(200,255,0,0.04)', borderRadius: '12px', fontFamily: 'Poppins, sans-serif' }}>
-          Editar plano completo
-        </Button>
-      </Link>
+        {/* Link to full prescriptions */}
+        <Link href={`/alunos/${student.id}?tab=prescricao`} className="mt-1">
+          <button className="w-full py-2.5 rounded-xl border text-xs font-medium transition-all hover:bg-white/5"
+            style={{ borderColor: '#2A2A2A', color: '#888888' }}>
+            + Criar novo plano para este aluno
+          </button>
+        </Link>
+      </div>
     </div>
   )
 }

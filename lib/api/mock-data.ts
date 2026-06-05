@@ -101,6 +101,7 @@ export const MOCK_EXAMS: Record<string, Exam[]> = {
 
 export const MOCK_DIET_PLAN: DietPlan = {
   id: 'dp1', user_id: '1', nutritionist_id: 'nutri-1',
+  name: 'Cutting Mulher 1800kcal',
   total_calories: 1800, total_protein: 140, total_carbs: 180, total_fat: 55,
   source: 'manual',
   meals: [
@@ -125,6 +126,65 @@ export const MOCK_DIET_PLAN: DietPlan = {
   ],
   created_at: '2025-01-01T00:00:00Z',
   updated_at: '2025-03-01T00:00:00Z'
+}
+
+export const MOCK_DIET_PLANS: DietPlan[] = [
+  MOCK_DIET_PLAN,
+  {
+    id: 'dp2', user_id: '', nutritionist_id: 'nutri-1',
+    name: 'Low Carb 1600kcal',
+    total_calories: 1600, total_protein: 150, total_carbs: 80, total_fat: 70,
+    source: 'ia',
+    meals: [
+      { id: 'm3', name: 'Café da manhã', name_en: '', name_es: '', time: '07:30', emoji: '🥚', substitution: '', items: [{ id: 'i7', name: 'Ovos mexidos', quantity: '3 unidades', calories: 210, protein: 18, carbs: 2, fat: 15 }, { id: 'i8', name: 'Abacate', quantity: '½ unidade', calories: 120, protein: 1, carbs: 6, fat: 11 }] },
+      { id: 'm4', name: 'Almoço', name_en: '', name_es: '', time: '12:00', emoji: '🥩', substitution: '', items: [{ id: 'i9', name: 'Carne vermelha', quantity: '180g', calories: 360, protein: 40, carbs: 0, fat: 22 }, { id: 'i10', name: 'Brócolis', quantity: '150g', calories: 50, protein: 4, carbs: 10, fat: 0 }] },
+      { id: 'm5', name: 'Jantar', name_en: '', name_es: '', time: '19:30', emoji: '🐟', substitution: '', items: [{ id: 'i11', name: 'Salmão grelhado', quantity: '150g', calories: 280, protein: 35, carbs: 0, fat: 15 }, { id: 'i12', name: 'Aspargos', quantity: '100g', calories: 20, protein: 2, carbs: 4, fat: 0 }] },
+    ],
+    created_at: '2025-02-01T00:00:00Z',
+    updated_at: '2025-02-15T00:00:00Z'
+  },
+  {
+    id: 'dp3', user_id: '', nutritionist_id: 'nutri-1',
+    name: 'Bulking Masculino 3000kcal',
+    total_calories: 3000, total_protein: 200, total_carbs: 350, total_fat: 80,
+    source: 'ia',
+    meals: [
+      { id: 'm6', name: 'Café da manhã', name_en: '', name_es: '', time: '07:00', emoji: '🥣', substitution: '', items: [{ id: 'i13', name: 'Aveia', quantity: '100g', calories: 370, protein: 13, carbs: 66, fat: 7 }, { id: 'i14', name: 'Whey protein', quantity: '40g', calories: 160, protein: 34, carbs: 4, fat: 1 }] },
+      { id: 'm7', name: 'Almoço', name_en: '', name_es: '', time: '12:30', emoji: '🍗', substitution: '', items: [{ id: 'i15', name: 'Frango grelhado', quantity: '250g', calories: 385, protein: 75, carbs: 0, fat: 8 }, { id: 'i16', name: 'Arroz branco', quantity: '6 colheres', calories: 300, protein: 6, carbs: 66, fat: 1 }] },
+      { id: 'm8', name: 'Pós-treino', name_en: '', name_es: '', time: '18:30', emoji: '💪', substitution: '', items: [{ id: 'i17', name: 'Batata doce', quantity: '200g', calories: 180, protein: 4, carbs: 41, fat: 0 }, { id: 'i18', name: 'Whey protein', quantity: '40g', calories: 160, protein: 34, carbs: 4, fat: 1 }] },
+    ],
+    created_at: '2025-02-10T00:00:00Z',
+    updated_at: '2025-03-05T00:00:00Z'
+  },
+  {
+    id: 'dp4', user_id: '', nutritionist_id: 'nutri-1',
+    name: 'Manutenção Saúde 2000kcal',
+    total_calories: 2000, total_protein: 130, total_carbs: 240, total_fat: 65,
+    source: 'manual',
+    meals: [
+      { id: 'm9', name: 'Café da manhã', name_en: '', name_es: '', time: '08:00', emoji: '☕', substitution: '', items: [{ id: 'i19', name: 'Pão integral', quantity: '2 fatias', calories: 140, protein: 6, carbs: 26, fat: 2 }, { id: 'i20', name: 'Queijo cottage', quantity: '100g', calories: 98, protein: 11, carbs: 3, fat: 4 }] },
+      { id: 'm10', name: 'Almoço', name_en: '', name_es: '', time: '12:30', emoji: '🍽️', substitution: '', items: [{ id: 'i21', name: 'Peixe assado', quantity: '150g', calories: 200, protein: 35, carbs: 0, fat: 6 }, { id: 'i22', name: 'Quinoa', quantity: '80g', calories: 290, protein: 11, carbs: 52, fat: 5 }] },
+    ],
+    created_at: '2025-03-01T00:00:00Z',
+    updated_at: '2025-03-20T00:00:00Z'
+  },
+  {
+    id: 'dp5', user_id: '', nutritionist_id: 'nutri-1',
+    name: 'Cetogênica 1700kcal',
+    total_calories: 1700, total_protein: 120, total_carbs: 30, total_fat: 130,
+    source: 'ia',
+    meals: [
+      { id: 'm11', name: 'Café da manhã', name_en: '', name_es: '', time: '09:00', emoji: '🥑', substitution: '', items: [{ id: 'i23', name: 'Ovos', quantity: '3 unidades', calories: 210, protein: 18, carbs: 2, fat: 15 }, { id: 'i24', name: 'Abacate', quantity: '1 unidade', calories: 240, protein: 3, carbs: 12, fat: 22 }] },
+      { id: 'm12', name: 'Almoço', name_en: '', name_es: '', time: '13:00', emoji: '🥩', substitution: '', items: [{ id: 'i25', name: 'Costela', quantity: '200g', calories: 490, protein: 42, carbs: 0, fat: 35 }, { id: 'i26', name: 'Azeite', quantity: '1 colher', calories: 90, protein: 0, carbs: 0, fat: 10 }] },
+    ],
+    created_at: '2025-04-01T00:00:00Z',
+    updated_at: '2025-04-10T00:00:00Z'
+  },
+]
+
+// planId ativo por aluno (mock em memória)
+export const MOCK_ACTIVE_PLAN: Record<string, string> = {
+  '1': 'dp1',
 }
 
 export const MOCK_RECIPES: Recipe[] = [

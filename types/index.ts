@@ -106,6 +106,7 @@ export interface DietPlan {
   id: string
   user_id: string
   nutritionist_id: string
+  name: string
   total_calories: number
   total_protein: number
   total_carbs: number

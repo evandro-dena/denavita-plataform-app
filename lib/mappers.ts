@@ -6,6 +6,7 @@ export function mapDietPlanFromDB(raw: Record<string, unknown>): DietPlan {
     id: raw.id as string,
     user_id: raw.user_id as string,
     nutritionist_id: raw.nutritionist_id as string,
+    name: (raw.name as string) ?? '',
     total_calories: raw.total_calories as number,
     total_protein: raw.total_protein as number,
     total_carbs: raw.total_carbs as number,
