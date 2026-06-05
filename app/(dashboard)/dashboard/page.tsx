@@ -29,16 +29,67 @@ function ContactSheet({ student, context, onClose }: ContactSheetProps) {
     ? new Date(student.subscription.expires_at).toLocaleDateString('pt-BR')
     : ''
 
-  const defaultMsg = student
-    ? context === 'vencimento'
-      ? `Olá ${student.name}! 👋\n\nPassando para avisar que o seu plano DenaVita ${student.subscription?.status === 'vencido' ? 'venceu' : `vence em ${expiresDate}`}.\n\nRenove agora para continuar com seu plano alimentar personalizado e suporte contínuo. 💪\n\nQualquer dúvida, estou aqui!`
-      : `Olá ${student.name}! 👋\n\nSeu plano alimentar está pronto e disponível no app DenaVita. Acesse agora para conferir suas refeições e macros personalizados! 🥗\n\nQualquer dúvida, me chame aqui.`
-    : ''
+  const templates = student ? [
+    {
+      id: 'vencimento',
+      label: 'Plano vencendo',
+      icon: '⏰',
+      message: `Olá ${student.name}! 👋\n\nPassando para avisar que o seu plano DenaVita ${student.subscription?.status === 'vencido' ? 'venceu' : `vence em ${expiresDate}`}.\n\nRenove agora para continuar com seu plano alimentar personalizado e suporte contínuo. 💪\n\nQualquer dúvida, estou aqui!`,
+      pushTitle: 'Seu plano está vencendo ⏰',
+      pushBody: 'Renove agora para continuar com seu plano alimentar personalizado.',
+    },
+    {
+      id: 'aula',
+      label: 'Aula nova no app',
+      icon: '🎥',
+      message: `Olá ${student.name}! 🎥\n\nTem conteúdo novo esperando por você no app DenaVita!\n\nUma nova aula foi adicionada ao seu plano — acesse agora e confira. 💪`,
+      pushTitle: 'Nova aula disponível! 🎥',
+      pushBody: 'Acesse o app DenaVita e confira o novo conteúdo do seu plano.',
+    },
+    {
+      id: 'plano',
+      label: 'Novo plano disponível',
+      icon: '🥗',
+      message: `Olá ${student.name}! 🥗\n\nSeu novo plano alimentar personalizado está disponível no app DenaVita!\n\nAcesse agora para ver suas refeições e começar com tudo. 💪`,
+      pushTitle: 'Novo plano alimentar 🥗',
+      pushBody: 'Seu plano personalizado foi atualizado. Acesse para conferir suas refeições.',
+    },
+    {
+      id: 'peso',
+      label: 'Registrar peso',
+      icon: '⚖️',
+      message: `Olá ${student.name}! ⚖️\n\nLembre-se de registrar seu peso hoje no app DenaVita.\n\nAcompanhar sua evolução é fundamental para o sucesso! 💪`,
+      pushTitle: 'Hora de registrar seu peso ⚖️',
+      pushBody: 'Acompanhar sua evolução é fundamental para atingir sua meta!',
+    },
+    {
+      id: 'custom',
+      label: 'Personalizada',
+      icon: '✏️',
+      message: '',
+      pushTitle: '',
+      pushBody: '',
+    },
+  ] : []
 
-  const [msg, setMsg] = useState(defaultMsg)
+  const initialTemplate = context === 'dieta' ? 'plano' : 'vencimento'
+  const initial = templates.find(t => t.id === initialTemplate) ?? templates[0]
+
+  const [selectedTemplate, setSelectedTemplate] = useState(initialTemplate)
+  const [msg, setMsg] = useState(initial?.message ?? '')
+  const [pushTitle, setPushTitle] = useState(initial?.pushTitle ?? '')
+  const [pushBody, setPushBody] = useState(initial?.pushBody ?? '')
+
+  const selectTemplate = (id: string) => {
+    const tpl = templates.find(t => t.id === id)
+    if (!tpl) return
+    setSelectedTemplate(id)
+    setMsg(tpl.message)
+    setPushTitle(tpl.pushTitle)
+    setPushBody(tpl.pushBody)
+  }
 
   const sendWhatsapp = () => {
-    // TODO: conectar API WhatsApp (Z-API / Evolution API / Twilio)
     const phone = student?.phone?.replace(/\D/g, '') ?? ''
     if (!phone) { toast.error('Telefone não cadastrado'); return }
     window.open(`https://wa.me/55${phone}?text=${encodeURIComponent(msg)}`, '_blank')
@@ -47,7 +98,6 @@ function ContactSheet({ student, context, onClose }: ContactSheetProps) {
   }
 
   const sendNotification = () => {
-    // TODO: conectar Expo Push Notifications / FCM
     toast.success('Notificação enviada ao app! (mock)')
     onClose()
   }
@@ -55,7 +105,6 @@ function ContactSheet({ student, context, onClose }: ContactSheetProps) {
   if (!student) return null
 
   const isVencido = student.subscription?.status === 'vencido'
-  const isVencendo = student.subscription?.status === 'vencendo'
 
   return (
     <Sheet open={!!student} onOpenChange={v => !v && onClose()}>
@@ -85,6 +134,30 @@ function ContactSheet({ student, context, onClose }: ContactSheetProps) {
 
         <div className="px-6 py-5 flex flex-col gap-6">
 
+          {/* Template selector */}
+          <div>
+            <p className="text-xs uppercase tracking-wide mb-2" style={{ color: '#555555' }}>Tipo de aviso</p>
+            <div className="grid grid-cols-2 gap-2">
+              {templates.map(tpl => (
+                <button
+                  key={tpl.id}
+                  onClick={() => selectTemplate(tpl.id)}
+                  className="flex items-center gap-2 px-3 py-2.5 rounded-xl border text-left transition-all"
+                  style={{
+                    background: selectedTemplate === tpl.id ? 'rgba(200,255,0,0.08)' : '#222222',
+                    borderColor: selectedTemplate === tpl.id ? '#C8FF00' : '#2A2A2A',
+                    color: selectedTemplate === tpl.id ? '#C8FF00' : '#888888',
+                    fontSize: '12px',
+                    fontWeight: selectedTemplate === tpl.id ? 600 : 400,
+                  }}
+                >
+                  <span>{tpl.icon}</span>
+                  <span>{tpl.label}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+
           {/* Status info */}
           {context === 'vencimento' && (
             <div className="flex items-center gap-2 p-3 rounded-xl" style={{ background: '#222222' }}>
@@ -94,9 +167,7 @@ function ContactSheet({ student, context, onClose }: ContactSheetProps) {
                 <strong style={{ color: isVencido ? '#EF4444' : '#F59E0B' }}>
                   {isVencido ? 'vencido' : `vence em ${expiresDate}`}
                 </strong>
-                {student.subscription?.plan && (
-                  <span> · {student.subscription.plan}</span>
-                )}
+                {student.subscription?.plan && <span> · {student.subscription.plan}</span>}
               </span>
             </div>
           )}
@@ -122,7 +193,7 @@ function ContactSheet({ student, context, onClose }: ContactSheetProps) {
             <Textarea
               value={msg}
               onChange={e => setMsg(e.target.value)}
-              rows={7}
+              rows={6}
               className="resize-none border text-sm leading-relaxed"
               style={{ background: '#111111', color: '#FFFFFF', borderColor: '#2A2A2A', borderRadius: '12px' }}
             />
@@ -150,18 +221,58 @@ function ContactSheet({ student, context, onClose }: ContactSheetProps) {
 
           {/* App notification */}
           <div>
-            <div className="flex items-center gap-2 mb-2">
+            <div className="flex items-center gap-2 mb-3">
               <Bell size={15} style={{ color: '#C8FF00' }} />
               <span className="text-sm font-medium" style={{ color: '#FFFFFF' }}>Notificação no app</span>
             </div>
-            <p className="text-xs mb-3" style={{ color: '#555555' }}>
-              Envia um push diretamente ao celular do aluno.{' '}
-              <span style={{ color: '#333333' }}>// TODO: conectar Expo Push / FCM</span>
-            </p>
+
+            <div className="mb-3">
+              <label className="text-xs uppercase tracking-wide mb-1.5 block" style={{ color: '#555555' }}>Título</label>
+              <input
+                value={pushTitle}
+                onChange={e => setPushTitle(e.target.value)}
+                placeholder="Ex: Nova aula disponível! 🎥"
+                className="w-full px-3 py-2.5 rounded-xl border text-sm font-bold outline-none focus:ring-1 focus:ring-[#C8FF00]"
+                style={{ background: '#111111', color: '#FFFFFF', borderColor: '#2A2A2A', fontFamily: 'Poppins, sans-serif' }}
+              />
+            </div>
+
+            <div className="mb-4">
+              <label className="text-xs uppercase tracking-wide mb-1.5 block" style={{ color: '#555555' }}>Descrição</label>
+              <textarea
+                value={pushBody}
+                onChange={e => setPushBody(e.target.value)}
+                placeholder="Ex: Acesse o app e confira o conteúdo novo do seu plano."
+                rows={3}
+                className="w-full px-3 py-2.5 rounded-xl border text-sm resize-none outline-none focus:ring-1 focus:ring-[#C8FF00] leading-relaxed"
+                style={{ background: '#111111', color: '#FFFFFF', borderColor: '#2A2A2A' }}
+              />
+            </div>
+
+            {(pushTitle || pushBody) && (
+              <div className="mb-4 p-3 rounded-xl border" style={{ background: '#111111', borderColor: '#2A2A2A' }}>
+                <p className="text-xs mb-2" style={{ color: '#555555' }}>Prévia no celular</p>
+                <div className="flex items-start gap-2.5">
+                  <div className="w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: '#C8FF00' }}>
+                    <Bell size={14} style={{ color: '#111111' }} />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs font-bold leading-tight" style={{ color: '#FFFFFF', fontFamily: 'Poppins, sans-serif' }}>
+                      {pushTitle || 'Título da notificação'}
+                    </p>
+                    {pushBody && (
+                      <p className="text-xs mt-0.5 leading-snug" style={{ color: '#888888' }}>{pushBody}</p>
+                    )}
+                  </div>
+                </div>
+              </div>
+            )}
+
             <Button
               onClick={sendNotification}
               variant="outline"
               className="w-full font-semibold"
+              disabled={!pushTitle.trim()}
               style={{
                 borderColor: 'rgba(200,255,0,0.3)',
                 color: '#C8FF00',
@@ -173,6 +284,9 @@ function ContactSheet({ student, context, onClose }: ContactSheetProps) {
               <Bell size={14} className="mr-2" />
               Enviar notificação no app
             </Button>
+            {!pushTitle.trim() && (
+              <p className="text-xs mt-1.5 text-center" style={{ color: '#555555' }}>Preencha o título para enviar</p>
+            )}
           </div>
 
           {/* Footer actions */}
