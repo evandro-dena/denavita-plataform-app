@@ -155,8 +155,8 @@ function DietEditor({ plan, onSave, studentId }: {
                 className="flex-1 text-sm font-semibold bg-transparent border-0 outline-none"
                 style={{ color: '#FFFFFF' }} placeholder="Nome da refeição" />
               <input value={meal.time} onChange={e => updateMeal(meal.id, 'time', e.target.value)}
-                type="time" className="text-xs bg-transparent border rounded-lg px-2 py-1"
-                style={{ color: '#888888', borderColor: '#3D3D3D', colorScheme: 'dark' }} />
+                type="text" placeholder="00:00" className="text-xs bg-transparent border rounded-lg px-2 py-1 w-16"
+                style={{ color: '#888888', borderColor: '#3D3D3D' }} />
               <span className="text-xs" style={{ color: '#C8FF00' }}>{mealTotals.calories} kcal</span>
               <button onClick={() => removeMeal(meal.id)} className="text-xs px-2 py-1 rounded-lg hover:bg-red-500/10 transition-all"
                 style={{ color: '#EF4444' }}>✕</button>
