@@ -253,6 +253,7 @@ export default function StudentProfilePage({ params }: { params: Promise<{ id: s
 
   const [notifyOpen, setNotifyOpen] = useState(false)
   const [whatsappMsg, setWhatsappMsg] = useState('')
+  const [notifyTemplate, setNotifyTemplate] = useState<string>('vencimento')
 
   if (isLoading) return <div className="p-8"><Skeleton className="h-12 w-64 mb-4" style={{ background: '#1A1A1A' }} /></div>
   if (!student) return <div className="p-8" style={{ color: '#888888' }}>Aluno não encontrado.</div>
@@ -264,18 +265,47 @@ export default function StudentProfilePage({ params }: { params: Promise<{ id: s
 
   const anamnesisData = anamnesis
 
-  const isExpiring =
-    student.subscription?.status === 'vencendo' || student.subscription?.status === 'vencido'
-
   const expiresDate = student.subscription?.expires_at
     ? new Date(student.subscription.expires_at).toLocaleDateString('pt-BR')
     : ''
 
-  const defaultWhatsappMsg =
-    `Olá ${student.name}! 👋\n\nPassando para avisar que o seu plano DenaVita ${student.subscription?.status === 'vencido' ? 'venceu' : `vence em ${expiresDate}`}.\n\nRenove agora para continuar tendo acesso ao seu plano alimentar personalizado e suporte contínuo. 💪\n\nQualquer dúvida, estou à disposição!`
+  const notifyTemplates = [
+    {
+      id: 'vencimento',
+      label: 'Plano vencendo',
+      icon: '⏰',
+      message: `Olá ${student.name}! 👋\n\nPassando para avisar que o seu plano DenaVita ${student.subscription?.status === 'vencido' ? 'venceu' : `vence em ${expiresDate}`}.\n\nRenove agora para continuar tendo acesso ao seu plano alimentar personalizado e suporte contínuo. 💪\n\nQualquer dúvida, estou à disposição!`,
+    },
+    {
+      id: 'aula',
+      label: 'Aula nova no app',
+      icon: '🎥',
+      message: `Olá ${student.name}! 🎥\n\nTem conteúdo novo esperando por você no app DenaVita!\n\nUma nova aula foi adicionada ao seu plano — acesse agora e confira. 💪`,
+    },
+    {
+      id: 'plano',
+      label: 'Novo plano disponível',
+      icon: '🥗',
+      message: `Olá ${student.name}! 🥗\n\nSeu novo plano alimentar personalizado está disponível no app DenaVita!\n\nAcesse agora para ver suas refeições e começar com tudo. 💪`,
+    },
+    {
+      id: 'peso',
+      label: 'Registrar peso',
+      icon: '⚖️',
+      message: `Olá ${student.name}! ⚖️\n\nLembre-se de registrar seu peso hoje no app DenaVita.\n\nAcompanhar sua evolução é fundamental para o sucesso! 💪`,
+    },
+    {
+      id: 'custom',
+      label: 'Personalizada',
+      icon: '✏️',
+      message: '',
+    },
+  ]
 
-  const openNotify = () => {
-    setWhatsappMsg(defaultWhatsappMsg)
+  const openNotify = (templateId = 'vencimento') => {
+    const tpl = notifyTemplates.find(t => t.id === templateId)
+    setNotifyTemplate(templateId)
+    setWhatsappMsg(tpl?.message ?? '')
     setNotifyOpen(true)
   }
 
@@ -310,22 +340,35 @@ export default function StudentProfilePage({ params }: { params: Promise<{ id: s
         >
           <SheetHeader className="mb-6">
             <SheetTitle style={{ fontFamily: 'Poppins, sans-serif', color: '#FFFFFF', fontSize: '18px' }}>
-              Avisar vencimento
+              Notificar aluno
             </SheetTitle>
             <p className="text-sm" style={{ color: '#888888' }}>
-              Escolha como notificar <strong style={{ color: '#FFFFFF' }}>{student.name}</strong> sobre o vencimento do plano.
+              Escolha o tipo de aviso para <strong style={{ color: '#FFFFFF' }}>{student.name}</strong>.
             </p>
           </SheetHeader>
 
-          {/* Status badge */}
-          <div className="flex items-center gap-2 mb-5 p-3 rounded-xl" style={{ background: '#222222' }}>
-            <Clock size={15} style={{ color: student.subscription?.status === 'vencido' ? '#EF4444' : '#F59E0B' }} />
-            <span className="text-sm" style={{ color: '#888888' }}>
-              Plano{' '}
-              <span style={{ color: student.subscription?.status === 'vencido' ? '#EF4444' : '#F59E0B', fontWeight: 600 }}>
-                {student.subscription?.status === 'vencido' ? 'vencido' : `vence em ${expiresDate}`}
-              </span>
-            </span>
+          {/* Template selector */}
+          <div className="grid grid-cols-2 gap-2 mb-5">
+            {notifyTemplates.map(tpl => (
+              <button
+                key={tpl.id}
+                onClick={() => {
+                  setNotifyTemplate(tpl.id)
+                  setWhatsappMsg(tpl.message)
+                }}
+                className="flex items-center gap-2 px-3 py-2.5 rounded-xl border text-left transition-all"
+                style={{
+                  background: notifyTemplate === tpl.id ? 'rgba(200,255,0,0.08)' : '#222222',
+                  borderColor: notifyTemplate === tpl.id ? '#C8FF00' : '#2A2A2A',
+                  color: notifyTemplate === tpl.id ? '#C8FF00' : '#888888',
+                  fontSize: '12px',
+                  fontWeight: notifyTemplate === tpl.id ? 600 : 400,
+                }}
+              >
+                <span>{tpl.icon}</span>
+                <span>{tpl.label}</span>
+              </button>
+            ))}
           </div>
 
           {/* WhatsApp section */}
@@ -406,24 +449,22 @@ export default function StudentProfilePage({ params }: { params: Promise<{ id: s
           </div>
         </div>
         <div className="flex items-center gap-3">
-          {isExpiring && (
-            <Button
-              onClick={openNotify}
-              size="sm"
-              style={{
-                background: 'rgba(245,158,11,0.12)',
-                color: '#F59E0B',
-                border: '1px solid rgba(245,158,11,0.3)',
-                borderRadius: '10px',
-                fontFamily: 'Poppins, sans-serif',
-                fontWeight: 600,
-                fontSize: '13px',
-              }}
-            >
-              <Bell size={14} className="mr-1.5" />
-              Avisar vencimento
-            </Button>
-          )}
+          <Button
+            onClick={() => openNotify('vencimento')}
+            size="sm"
+            style={{
+              background: 'rgba(200,255,0,0.08)',
+              color: '#C8FF00',
+              border: '1px solid rgba(200,255,0,0.3)',
+              borderRadius: '10px',
+              fontFamily: 'Poppins, sans-serif',
+              fontWeight: 600,
+              fontSize: '13px',
+            }}
+          >
+            <Bell size={14} className="mr-1.5" />
+            Notificar aluno
+          </Button>
           <Badge style={{
             background: student.status === 'ativo' ? 'rgba(200,255,0,0.12)' : 'rgba(136,136,136,0.12)',
             color: student.status === 'ativo' ? '#C8FF00' : '#888888',
@@ -446,7 +487,13 @@ export default function StudentProfilePage({ params }: { params: Promise<{ id: s
             { value: 'assinatura', label: 'Assinatura' },
           ].map(t => (
             <TabsTrigger key={t.value} value={t.value}
-              className="rounded-xl text-sm data-[state=active]:bg-[#C8FF00] data-[state=active]:text-black data-[state=active]:font-semibold"
+              className="rounded-xl text-sm transition-all
+                data-[state=active]:bg-transparent
+                data-[state=active]:text-[#C8FF00]
+                data-[state=active]:font-semibold
+                data-[state=active]:ring-1
+                data-[state=active]:ring-[#C8FF00]
+                data-[state=inactive]:text-[#888888]"
               style={{ color: '#888888' }}>
               {t.label}
             </TabsTrigger>
