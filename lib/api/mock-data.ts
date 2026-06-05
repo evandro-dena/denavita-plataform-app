@@ -11,13 +11,13 @@ export const MOCK_STUDENTS: Student[] = [
     id: '2', name: 'Rafael Souza', email: 'rafael@email.com', role: 'aluno',
     nutritionist_id: 'nutri-1', goal_label: 'Ganhar massa', current_weight: 78, goal_weight: 85,
     phone: '(11) 99999-0002', birth_date: '1992-07-22', created_at: '2024-02-05T00:00:00Z',
-    status: 'ativo', subscription: { id: 's2', user_id: '2', plan: 'trimestral', status: 'ativo', started_at: '2025-03-01T00:00:00Z', expires_at: '2025-08-15T00:00:00Z', price: 799 }
+    status: 'espera', subscription: { id: 's2', user_id: '2', plan: 'trimestral', status: 'ativo', started_at: '2025-03-01T00:00:00Z', expires_at: '2025-08-15T00:00:00Z', price: 799 }
   },
   {
     id: '3', name: 'Juliana Ferreira', email: 'juliana@email.com', role: 'aluno',
     nutritionist_id: 'nutri-1', goal_label: 'Saúde geral', current_weight: 65, goal_weight: 60,
     phone: '(11) 99999-0003', birth_date: '1998-11-08', created_at: '2024-03-20T00:00:00Z',
-    status: 'ativo', subscription: { id: 's3', user_id: '3', plan: 'semestral', status: 'ativo', started_at: '2025-01-01T00:00:00Z', expires_at: '2025-09-30T00:00:00Z', price: 1399 }
+    status: 'espera', subscription: { id: 's3', user_id: '3', plan: 'semestral', status: 'ativo', started_at: '2025-01-01T00:00:00Z', expires_at: '2025-09-30T00:00:00Z', price: 1399 }
   },
   {
     id: '4', name: 'Carlos Mendes', email: 'carlos@email.com', role: 'aluno',

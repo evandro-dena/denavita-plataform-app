@@ -1,7 +1,7 @@
 'use client'
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { studentService, anamnesisService, assessmentService, examService, weightService } from '@/lib/api/students'
+import { studentService, anamnesisService, assessmentService, examService, weightService, dietReviewService } from '@/lib/api/students'
 import { mealPlanService } from '@/lib/api/diet'
 import Topbar from '@/components/layout/Topbar'
 import { Button } from '@/components/ui/button'
@@ -793,10 +793,29 @@ export default function AlunosPage() {
     queryFn: () => studentService.list(NUTRI_ID),
   })
 
+  const { data: needsDietReview = [] } = useQuery({
+    queryKey: ['needs-diet-review', NUTRI_ID],
+    queryFn: () => dietReviewService.getNeedingReview(NUTRI_ID),
+  })
+
+  const needsReviewIds = new Set(needsDietReview.map(s => s.id))
+
   const toggleStatus = useMutation({
     mutationFn: ({ id, status }: { id: string; status: Student['status'] }) =>
       studentService.updateStatus(id, status),
     onSuccess: () => { qc.invalidateQueries({ queryKey: ['students'] }); toast.success('Status atualizado') },
+  })
+
+  const releaseStudent = useMutation({
+    mutationFn: async (id: string) => {
+      await studentService.updateStatus(id, 'ativo')
+      await dietReviewService.markAsReviewed(id)
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['students'] })
+      qc.invalidateQueries({ queryKey: ['needs-diet-review'] })
+      toast.success('Aluno liberado para Aceitos!')
+    },
   })
 
   const filtered = students
@@ -874,8 +893,11 @@ export default function AlunosPage() {
             ) : (
               <table className="w-full">
                 <thead>
-                  <tr style={{ borderBottom: '1px solid #2A2A2A' }}>
-                    {['Aluno', 'Objetivo', 'Expira em', 'Status', ''].map(h => (
+                  <tr style={{ borderBottom: '1px solid #3D3D3D' }}>
+                    {(tab === 'espera'
+                      ? ['Aluno', 'Objetivo', 'Anamnese', 'Dieta IA', '']
+                      : ['Aluno', 'Objetivo', 'Expira em', 'Status', '']
+                    ).map(h => (
                       <th key={h} className="text-left px-4 py-3 text-xs font-medium uppercase tracking-wide" style={{ color: '#555555' }}>{h}</th>
                     ))}
                   </tr>
@@ -884,6 +906,8 @@ export default function AlunosPage() {
                   {filtered.map(s => {
                     const sc = statusColor(s.status)
                     const isSelected = selected?.student.id === s.id
+                    const hasAnamesis = needsReviewIds.has(s.id) || s.status === 'espera'
+                    const hasDiet = needsReviewIds.has(s.id)
                     return (
                       <tr
                         key={s.id}
@@ -909,29 +933,77 @@ export default function AlunosPage() {
                           </button>
                         </td>
                         <td className="px-4 py-3 text-sm" style={{ color: '#888888' }}>
-                          {panelOpen ? null : (s.goal_label ?? '-')}
+                          {s.goal_label ?? '-'}
                         </td>
-                        <td className="px-4 py-3 text-sm" style={{ color: '#888888' }}>
-                          {s.subscription?.expires_at
-                            ? new Date(s.subscription.expires_at).toLocaleDateString('pt-BR')
-                            : '-'}
-                        </td>
-                        <td className="px-4 py-3">
-                          <div className="flex items-center gap-2">
-                            <Switch
-                              checked={s.status === 'ativo'}
-                              onCheckedChange={checked =>
-                                toggleStatus.mutate({ id: s.id, status: checked ? 'ativo' : 'inativo' })
-                              }
-                            />
-                            {!panelOpen && (
-                              <Badge style={{ background: sc.bg, color: sc.color, border: 'none', borderRadius: '9999px', fontSize: '11px' }}>
-                                {s.status === 'ativo' ? 'Ativo' : s.status === 'inativo' ? 'Inativo' : s.status === 'espera' ? 'Espera' : 'Excluído'}
+
+                        {tab === 'espera' ? (
+                          <>
+                            <td className="px-4 py-3">
+                              <Badge style={{
+                                background: hasAnamesis ? 'rgba(200,255,0,0.12)' : 'rgba(136,136,136,0.12)',
+                                color: hasAnamesis ? '#C8FF00' : '#555555',
+                                border: 'none', borderRadius: '9999px', fontSize: '11px',
+                              }}>
+                                {hasAnamesis ? '✓ Preenchida' : 'Pendente'}
                               </Badge>
-                            )}
-                          </div>
-                        </td>
+                            </td>
+                            <td className="px-4 py-3">
+                              <Badge style={{
+                                background: hasDiet ? 'rgba(200,255,0,0.12)' : 'rgba(245,158,11,0.12)',
+                                color: hasDiet ? '#C8FF00' : '#F59E0B',
+                                border: 'none', borderRadius: '9999px', fontSize: '11px',
+                              }}>
+                                {hasDiet ? '✓ Gerada' : 'Aguardando'}
+                              </Badge>
+                            </td>
+                          </>
+                        ) : (
+                          <>
+                            <td className="px-4 py-3 text-sm" style={{ color: '#888888' }}>
+                              {s.subscription?.expires_at
+                                ? new Date(s.subscription.expires_at).toLocaleDateString('pt-BR')
+                                : '-'}
+                            </td>
+                            <td className="px-4 py-3">
+                              <div className="flex items-center gap-2">
+                                <Switch
+                                  checked={s.status === 'ativo'}
+                                  onCheckedChange={checked =>
+                                    toggleStatus.mutate({ id: s.id, status: checked ? 'ativo' : 'inativo' })
+                                  }
+                                />
+                                {!panelOpen && (
+                                  <Badge style={{ background: sc.bg, color: sc.color, border: 'none', borderRadius: '9999px', fontSize: '11px' }}>
+                                    {s.status === 'ativo' ? 'Ativo' : s.status === 'inativo' ? 'Inativo' : s.status === 'espera' ? 'Espera' : 'Excluído'}
+                                  </Badge>
+                                )}
+                              </div>
+                            </td>
+                          </>
+                        )}
                         <td className="px-4 py-3">
+                          <div className="flex items-center gap-2 justify-end">
+                            {tab === 'espera' && (
+                              <Button
+                                size="sm"
+                                disabled={releaseStudent.isPending}
+                                onClick={() => openPanel(s, 'nutricao')}
+                                variant="outline"
+                                style={{ borderColor: 'rgba(200,255,0,0.4)', color: '#C8FF00', background: 'rgba(200,255,0,0.06)', borderRadius: '10px', fontSize: '12px', height: '30px', padding: '0 10px' }}
+                              >
+                                Ver dieta
+                              </Button>
+                            )}
+                            {tab === 'espera' && hasDiet && (
+                              <Button
+                                size="sm"
+                                disabled={releaseStudent.isPending}
+                                onClick={() => releaseStudent.mutate(s.id)}
+                                style={{ background: '#C8FF00', color: '#1C1C1C', borderRadius: '10px', fontSize: '12px', fontWeight: 700, height: '30px', padding: '0 10px', fontFamily: 'Poppins, sans-serif' }}
+                              >
+                                Liberar
+                              </Button>
+                            )}
                           <DropdownMenu>
                             <DropdownMenuTrigger>
                               <button className="p-1.5 rounded-lg hover:bg-white/10 transition-all">
@@ -969,6 +1041,7 @@ export default function AlunosPage() {
                               </DropdownMenuItem>
                             </DropdownMenuContent>
                           </DropdownMenu>
+                          </div>
                         </td>
                       </tr>
                     )
