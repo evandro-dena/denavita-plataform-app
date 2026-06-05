@@ -807,6 +807,11 @@ export default function AlunosPage() {
     queryFn: () => dietReviewService.getNeedingReview(NUTRI_ID),
   })
 
+  const { data: pendingPlanMap = {} } = useQuery({
+    queryKey: ['pending-plan-map'],
+    queryFn: () => dietReviewService.getPendingPlanMap(),
+  })
+
   const needsReviewIds = new Set(needsDietReview.map(s => s.id))
 
   const toggleStatus = useMutation({
@@ -992,8 +997,8 @@ export default function AlunosPage() {
                         )}
                         <td className="px-4 py-3">
                           <div className="flex items-center gap-2 justify-end">
-                            {tab === 'espera' && (
-                              <Link href={`/alunos/${s.id}?tab=prescricao`}>
+                            {tab === 'espera' && pendingPlanMap[s.id] && (
+                              <Link href={`/prescricoes/${pendingPlanMap[s.id]}`}>
                                 <Button
                                   size="sm"
                                   variant="outline"

@@ -1,5 +1,5 @@
 import { Student, Anamnesis, Assessment, Exam, WeightRecord } from '@/types'
-import { MOCK_STUDENTS, MOCK_ANAMNESIS, MOCK_ASSESSMENTS, MOCK_EXAMS, MOCK_WEIGHT_HISTORY, MOCK_NEEDS_DIET_REVIEW } from './mock-data'
+import { MOCK_STUDENTS, MOCK_ANAMNESIS, MOCK_ASSESSMENTS, MOCK_EXAMS, MOCK_WEIGHT_HISTORY, MOCK_NEEDS_DIET_REVIEW, MOCK_PENDING_REVIEW_PLANS } from './mock-data'
 
 export const studentService = {
   async list(nutritionistId: string): Promise<Student[]> {
@@ -61,9 +61,14 @@ export const dietReviewService = {
   },
 
   async markAsReviewed(userId: string): Promise<void> {
-    // TODO: Supabase — set diet_plans.verified_at = now() for this user
     void userId
     await new Promise(r => setTimeout(r, 200))
+    delete MOCK_PENDING_REVIEW_PLANS[userId]
+  },
+
+  async getPendingPlanMap(): Promise<Record<string, string>> {
+    await new Promise(r => setTimeout(r, 100))
+    return { ...MOCK_PENDING_REVIEW_PLANS }
   },
 }
 

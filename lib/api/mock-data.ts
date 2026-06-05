@@ -197,6 +197,13 @@ export const MOCK_RECIPES: Recipe[] = [
   { id: 'r2', name: 'Omelete proteico', category: 'Café da manhã', prep_time: 10, calories: 280, protein: 24, carbs: 4, fat: 18, is_active: true, ingredients: ['3 ovos', '30g queijo cottage', 'Ervas'], instructions: ['Bater ovos', 'Fritar', 'Rechear'], created_at: '2025-01-02T00:00:00Z' },
 ]
 
+// Plano pendente de revisão por aluno (gerado pela IA, aguardando nutricionista)
+export const MOCK_PENDING_REVIEW_PLANS: Record<string, string> = {
+  '2': 'dp3', // Rafael Souza → Bulking Masculino 3000kcal
+  '3': 'dp4', // Juliana Ferreira → Manutenção Saúde 2000kcal
+  '4': 'dp5', // Carlos Mendes → Cetogênica 1700kcal
+}
+
 export const MOCK_DASHBOARD: DashboardStats = {
   total_students: 5, active_students: 3, expiring_7d: 1,
   expiring_15d: 1, expiring_30d: 2, pending_exams: 1, waiting_list: 1
