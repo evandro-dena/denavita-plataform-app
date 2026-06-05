@@ -98,4 +98,18 @@
   ::-webkit-scrollbar { width: 5px; height: 5px; }
   ::-webkit-scrollbar-track { background: #262626; }
   ::-webkit-scrollbar-thumb { background: #3D3D3D; border-radius: 3px; }
+
+  /* Time input — dark color scheme so native picker renders dark */
+  input[type="time"] {
+    color-scheme: dark;
+    -webkit-appearance: none;
+  }
+  input[type="time"]::-webkit-calendar-picker-indicator {
+    filter: invert(1) brightness(0.6);
+    cursor: pointer;
+    opacity: 0.5;
+  }
+  input[type="time"]::-webkit-calendar-picker-indicator:hover {
+    opacity: 1;
+  }
 }

@@ -112,13 +112,13 @@ function Editor({ plan, onSave }: { plan: DietPlan; onSave: (p: Partial<DietPlan
                   onClick={() => toggleExpand(meal.id)}
                 >
                   <AlignJustify size={14} style={{ color: '#555555' }} className="flex-shrink-0" onClick={e => e.stopPropagation()} />
-                  <div className="w-16 flex-shrink-0" onClick={e => e.stopPropagation()}>
+                  <div className="flex-shrink-0" onClick={e => e.stopPropagation()}>
                     <input
                       type="time"
                       value={meal.time}
                       onChange={e => updateMeal(meal.id, 'time', e.target.value)}
-                      className="bg-transparent border-0 outline-none text-sm font-bold w-full"
-                      style={{ color: '#C8FF00' }}
+                      className="bg-transparent border-0 outline-none text-sm font-bold"
+                      style={{ color: '#C8FF00', colorScheme: 'dark', width: '80px' }}
                     />
                   </div>
                   {isOpen ? (
