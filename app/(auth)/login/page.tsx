@@ -42,19 +42,19 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4" style={{ background: '#111111' }}>
+    <div className="min-h-screen flex items-center justify-center p-4" style={{ background: '#1C1C1C' }}>
       <div className="w-full max-w-md">
         {/* Logo */}
         <div className="flex flex-col items-center mb-10">
           <div className="w-16 h-16 rounded-2xl flex items-center justify-center mb-4" style={{ background: '#C8FF00' }}>
-            <Dumbbell size={28} style={{ color: '#111111' }} />
+            <Dumbbell size={28} style={{ color: '#1C1C1C' }} />
           </div>
           <h1 className="text-3xl font-bold" style={{ fontFamily: 'Poppins, sans-serif', color: '#FFFFFF' }}>DenaVita</h1>
           <p className="text-sm mt-1" style={{ color: '#888888' }}>Painel do Nutricionista</p>
         </div>
 
         {/* Form */}
-        <div className="rounded-2xl p-8 border" style={{ background: '#1A1A1A', borderColor: '#2A2A2A' }}>
+        <div className="rounded-2xl p-8 border" style={{ background: '#262626', borderColor: '#3D3D3D' }}>
           <h2 className="text-xl font-semibold mb-6" style={{ fontFamily: 'Poppins, sans-serif', color: '#FFFFFF' }}>Entrar na plataforma</h2>
 
           <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-5">
@@ -65,7 +65,7 @@ export default function LoginPage() {
                 type="email"
                 placeholder="seu@email.com"
                 className="mt-1.5 border-0 focus-visible:ring-1"
-                style={{ background: '#222222', color: '#FFFFFF', borderRadius: '12px' }}
+                style={{ background: '#2F2F2F', color: '#FFFFFF', borderRadius: '12px' }}
                 {...register('email')}
               />
               {errors.email && <p className="text-xs mt-1" style={{ color: '#EF4444' }}>{errors.email.message}</p>}
@@ -79,7 +79,7 @@ export default function LoginPage() {
                   type={showPassword ? 'text' : 'password'}
                   placeholder="••••••••"
                   className="pr-10 border-0 focus-visible:ring-1"
-                  style={{ background: '#222222', color: '#FFFFFF', borderRadius: '12px' }}
+                  style={{ background: '#2F2F2F', color: '#FFFFFF', borderRadius: '12px' }}
                   {...register('password')}
                 />
                 <button
@@ -98,7 +98,7 @@ export default function LoginPage() {
               type="submit"
               disabled={loading}
               className="w-full h-12 font-semibold text-sm mt-2"
-              style={{ background: '#C8FF00', color: '#111111', borderRadius: '12px', fontFamily: 'Poppins, sans-serif' }}
+              style={{ background: '#C8FF00', color: '#1C1C1C', borderRadius: '12px', fontFamily: 'Poppins, sans-serif' }}
             >
               {loading ? 'Entrando...' : 'ENTRAR'}
             </Button>

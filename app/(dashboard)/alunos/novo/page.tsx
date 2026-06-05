@@ -51,7 +51,7 @@ export default function NovoAlunoPage() {
 
   const onSubmit: SubmitHandler<FormData> = (data) => create.mutate(data)
 
-  const inputStyle = { background: '#1A1A1A', color: '#FFFFFF', borderRadius: '12px', borderColor: '#2A2A2A' }
+  const inputStyle = { background: '#262626', color: '#FFFFFF', borderRadius: '12px', borderColor: '#3D3D3D' }
 
   return (
     <div>
@@ -65,7 +65,7 @@ export default function NovoAlunoPage() {
       </div>
 
       <form onSubmit={handleSubmit(onSubmit)}>
-        <div className="rounded-2xl border p-8 max-w-2xl" style={{ background: '#1A1A1A', borderColor: '#2A2A2A' }}>
+        <div className="rounded-2xl border p-8 max-w-2xl" style={{ background: '#262626', borderColor: '#3D3D3D' }}>
           <div className="grid grid-cols-2 gap-5">
             <div className="col-span-2">
               <Label style={{ color: '#888888', fontSize: '13px' }}>Nome completo *</Label>
@@ -93,7 +93,7 @@ export default function NovoAlunoPage() {
                 <SelectTrigger className="mt-1.5 border" style={{ ...inputStyle, minHeight: '40px' }}>
                   <SelectValue placeholder="Selecionar objetivo" />
                 </SelectTrigger>
-                <SelectContent style={{ background: '#1A1A1A', border: '1px solid #2A2A2A', borderRadius: '12px' }}>
+                <SelectContent style={{ background: '#262626', border: '1px solid #2A2A2A', borderRadius: '12px' }}>
                   {GOALS.map(g => (
                     <SelectItem key={g} value={g} style={{ color: '#FFFFFF' }}>{g}</SelectItem>
                   ))}
@@ -113,12 +113,12 @@ export default function NovoAlunoPage() {
 
           <div className="flex gap-3 mt-8">
             <Link href="/alunos">
-              <Button variant="outline" type="button" style={{ borderRadius: '12px', borderColor: '#2A2A2A', background: 'transparent', color: '#888888' }}>
+              <Button variant="outline" type="button" style={{ borderRadius: '12px', borderColor: '#3D3D3D', background: 'transparent', color: '#888888' }}>
                 Cancelar
               </Button>
             </Link>
             <Button type="submit" disabled={create.isPending}
-              style={{ background: '#C8FF00', color: '#111111', borderRadius: '12px', fontFamily: 'Poppins, sans-serif', fontWeight: 600 }}>
+              style={{ background: '#C8FF00', color: '#1C1C1C', borderRadius: '12px', fontFamily: 'Poppins, sans-serif', fontWeight: 600 }}>
               {create.isPending ? 'Cadastrando...' : 'Cadastrar aluno'}
             </Button>
           </div>

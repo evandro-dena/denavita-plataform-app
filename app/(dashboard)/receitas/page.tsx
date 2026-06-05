@@ -23,22 +23,22 @@ export default function ReceitasPage() {
         title="Receitas"
         subtitle="Biblioteca de receitas do app"
         action={
-          <Button style={{ background: '#C8FF00', color: '#111111', borderRadius: '12px', fontFamily: 'Poppins, sans-serif', fontWeight: 600 }}>
+          <Button style={{ background: '#C8FF00', color: '#1C1C1C', borderRadius: '12px', fontFamily: 'Poppins, sans-serif', fontWeight: 600 }}>
             <Plus size={16} className="mr-2" /> Nova receita
           </Button>
         }
       />
       {isLoading ? (
         <div className="grid grid-cols-3 gap-4">
-          {Array(6).fill(0).map((_, i) => <Skeleton key={i} className="h-48 rounded-2xl" style={{ background: '#1A1A1A' }} />)}
+          {Array(6).fill(0).map((_, i) => <Skeleton key={i} className="h-48 rounded-2xl" style={{ background: '#262626' }} />)}
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {recipes.map(r => (
-            <div key={r.id} className="rounded-2xl border p-5" style={{ background: '#1A1A1A', borderColor: '#2A2A2A' }}>
+            <div key={r.id} className="rounded-2xl border p-5" style={{ background: '#262626', borderColor: '#3D3D3D' }}>
               <div className="flex items-start justify-between mb-3">
                 <div>
-                  <Badge style={{ background: '#222222', color: '#888888', border: 'none', borderRadius: '9999px', fontSize: '11px' }}>{r.category}</Badge>
+                  <Badge style={{ background: '#2F2F2F', color: '#888888', border: 'none', borderRadius: '9999px', fontSize: '11px' }}>{r.category}</Badge>
                   <h3 className="font-semibold text-sm mt-2" style={{ fontFamily: 'Poppins, sans-serif', color: '#FFFFFF' }}>{r.name}</h3>
                 </div>
                 <button onClick={() => deleteRecipe.mutate(r.id)} className="p-1.5 rounded-lg hover:bg-red-500/10 transition-all">

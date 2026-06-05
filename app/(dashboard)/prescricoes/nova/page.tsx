@@ -62,7 +62,7 @@ export default function NovaPrescricaoPage() {
           placeholder="ex: Low Carb 1600kcal"
           autoFocus
           className="w-full bg-transparent border-b pb-2 text-base outline-none focus:border-[#C8FF00] transition-colors"
-          style={{ color: '#FFFFFF', borderColor: '#2A2A2A' }}
+          style={{ color: '#FFFFFF', borderColor: '#3D3D3D' }}
         />
       </div>
 
@@ -70,7 +70,7 @@ export default function NovaPrescricaoPage() {
         onClick={() => { if (name.trim()) create.mutate() }}
         disabled={!name.trim() || create.isPending}
         style={{
-          background: '#C8FF00', color: '#111111', borderRadius: '12px',
+          background: '#C8FF00', color: '#1C1C1C', borderRadius: '12px',
           fontFamily: 'Poppins, sans-serif', fontWeight: 700,
           paddingLeft: '28px', paddingRight: '28px',
         }}

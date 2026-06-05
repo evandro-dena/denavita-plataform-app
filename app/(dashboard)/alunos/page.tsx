@@ -55,13 +55,13 @@ function statusColor(status: Student['status']) {
 
 // ─── Shared styles ───────────────────────────────────────────────
 const iCls = 'w-full px-3 py-2.5 rounded-xl border text-sm outline-none focus:ring-1 focus:ring-[#C8FF00] transition-all'
-const iStyle = { background: '#111111', color: '#FFFFFF', borderColor: '#2A2A2A' }
+const iStyle = { background: '#1C1C1C', color: '#FFFFFF', borderColor: '#3D3D3D' }
 const lblCls = 'text-xs uppercase tracking-wide mb-1 block'
 
 // ─── Info Row ────────────────────────────────────────────────────
 function InfoRow({ label, value }: { label: string; value?: string | number | null }) {
   return (
-    <div className="flex flex-col gap-0.5 py-2.5 border-b last:border-0" style={{ borderColor: '#2A2A2A' }}>
+    <div className="flex flex-col gap-0.5 py-2.5 border-b last:border-0" style={{ borderColor: '#3D3D3D' }}>
       <span className="text-xs uppercase tracking-wide" style={{ color: '#555555' }}>{label}</span>
       <span className="text-sm" style={{ color: value ? '#FFFFFF' : '#555555' }}>{value ?? '—'}</span>
     </div>
@@ -88,7 +88,7 @@ function EditBar({ isEditing, onEdit, onSave, onCancel, saving }: {
       </button>
       <button onClick={onSave} disabled={saving}
         className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold transition-all"
-        style={{ background: '#C8FF00', color: '#111111', fontFamily: 'Poppins, sans-serif' }}>
+        style={{ background: '#C8FF00', color: '#1C1C1C', fontFamily: 'Poppins, sans-serif' }}>
         <Save size={12} /> {saving ? 'Salvando...' : 'Salvar'}
       </button>
     </div>
@@ -101,10 +101,10 @@ function PanelHeader({ student, section, onClose }: {
 }) {
   const item = MENU_ITEMS.find(m => m.key === section)
   return (
-    <div className="flex items-center justify-between px-5 py-4 border-b flex-shrink-0" style={{ borderColor: '#2A2A2A' }}>
+    <div className="flex items-center justify-between px-5 py-4 border-b flex-shrink-0" style={{ borderColor: '#3D3D3D' }}>
       <div className="flex items-center gap-3">
         <div className="w-9 h-9 rounded-full flex items-center justify-center text-sm font-bold flex-shrink-0"
-          style={{ background: '#C8FF00', color: '#111111', fontFamily: 'Poppins, sans-serif' }}>
+          style={{ background: '#C8FF00', color: '#1C1C1C', fontFamily: 'Poppins, sans-serif' }}>
           {student.name.charAt(0)}
         </div>
         <div>
@@ -203,13 +203,13 @@ function AnamnesePanel({ studentId }: { studentId: string }) {
     queryFn: () => anamnesisService.getByUser(studentId),
   })
 
-  if (isLoading) return <div className="p-5"><Skeleton className="h-8 w-full mb-2" style={{ background: '#2A2A2A' }} /></div>
+  if (isLoading) return <div className="p-5"><Skeleton className="h-8 w-full mb-2" style={{ background: '#3D3D3D' }} /></div>
   if (!data) return (
     <div className="p-5 text-center flex flex-col items-center gap-3" style={{ color: '#555555' }}>
       <ClipboardList size={32} className="opacity-30" />
       <p className="text-sm">Anamnese ainda não preenchida pelo aluno.</p>
       <Link href={`/alunos/${studentId}?tab=anamnese`}>
-        <Button size="sm" style={{ background: '#C8FF00', color: '#111111', borderRadius: '10px', fontFamily: 'Poppins, sans-serif' }}>
+        <Button size="sm" style={{ background: '#C8FF00', color: '#1C1C1C', borderRadius: '10px', fontFamily: 'Poppins, sans-serif' }}>
           <Pencil size={13} className="mr-1.5" /> Preencher agora
         </Button>
       </Link>
@@ -292,7 +292,7 @@ function NutricaoPanel({ student }: { student: Student }) {
             onChange={e => setSearch(e.target.value)}
             placeholder="Buscar plano..."
             className="w-full pl-8 pr-3 py-2 rounded-xl border text-sm outline-none"
-            style={{ background: '#111111', color: '#FFFFFF', borderColor: '#2A2A2A' }}
+            style={{ background: '#1C1C1C', color: '#FFFFFF', borderColor: '#3D3D3D' }}
           />
         </div>
         <p className="text-xs mt-2" style={{ color: '#555555' }}>
@@ -304,7 +304,7 @@ function NutricaoPanel({ student }: { student: Student }) {
       <div className="flex-1 overflow-y-auto px-4 pb-4 flex flex-col gap-2">
         {isLoading ? (
           Array(4).fill(0).map((_, i) => (
-            <Skeleton key={i} className="h-20 rounded-2xl" style={{ background: '#222222' }} />
+            <Skeleton key={i} className="h-20 rounded-2xl" style={{ background: '#2F2F2F' }} />
           ))
         ) : filtered.length === 0 ? (
           <div className="text-center py-8" style={{ color: '#555555' }}>
@@ -319,8 +319,8 @@ function NutricaoPanel({ student }: { student: Student }) {
                 key={plan.id}
                 className="rounded-2xl border p-4 transition-all"
                 style={{
-                  background: isActive ? 'rgba(200,255,0,0.06)' : '#222222',
-                  borderColor: isActive ? 'rgba(200,255,0,0.4)' : '#2A2A2A',
+                  background: isActive ? 'rgba(200,255,0,0.06)' : '#2F2F2F',
+                  borderColor: isActive ? 'rgba(200,255,0,0.4)' : '#3D3D3D',
                 }}
               >
                 {/* Name + badge */}
@@ -367,7 +367,7 @@ function NutricaoPanel({ student }: { student: Student }) {
         {/* Link to full prescriptions */}
         <Link href={`/alunos/${student.id}?tab=prescricao`} className="mt-1">
           <button className="w-full py-2.5 rounded-xl border text-xs font-medium transition-all hover:bg-white/5"
-            style={{ borderColor: '#2A2A2A', color: '#888888' }}>
+            style={{ borderColor: '#3D3D3D', color: '#888888' }}>
             + Criar novo plano para este aluno
           </button>
         </Link>
@@ -410,7 +410,7 @@ function AvaliacaoPanel({ studentId }: { studentId: string }) {
       </div>
 
       {adding && (
-        <div className="rounded-2xl border p-4 flex flex-col gap-3" style={{ background: '#222222', borderColor: 'rgba(200,255,0,0.3)' }}>
+        <div className="rounded-2xl border p-4 flex flex-col gap-3" style={{ background: '#2F2F2F', borderColor: 'rgba(200,255,0,0.3)' }}>
           <p className="text-xs font-semibold" style={{ color: '#C8FF00', fontFamily: 'Poppins, sans-serif' }}>Nova avaliação</p>
           <div className="grid grid-cols-2 gap-3">
             <div><label className={lblCls} style={{ color: '#555555' }}>Data</label><input type="date" value={form.date} onChange={f('date')} className={iCls} style={iStyle} /></div>
@@ -429,20 +429,20 @@ function AvaliacaoPanel({ studentId }: { studentId: string }) {
         </div>
       )}
 
-      {isLoading ? <Skeleton className="h-20 rounded-2xl" style={{ background: '#2A2A2A' }} />
+      {isLoading ? <Skeleton className="h-20 rounded-2xl" style={{ background: '#3D3D3D' }} />
         : !assessments.length ? (
           <div className="text-center py-4" style={{ color: '#555555' }}>
             <Activity size={28} className="mx-auto mb-2 opacity-30" />
             <p className="text-sm">Nenhuma avaliação. Clique em Editar para adicionar.</p>
           </div>
         ) : assessments.map(a => (
-          <div key={a.id} className="rounded-2xl border p-4" style={{ background: '#222222', borderColor: '#2A2A2A' }}>
+          <div key={a.id} className="rounded-2xl border p-4" style={{ background: '#2F2F2F', borderColor: '#3D3D3D' }}>
             <p className="text-xs mb-3" style={{ color: '#555555' }}>
               {new Date(a.date).toLocaleDateString('pt-BR')} — {a.type === 'bioimpedance' ? 'Bioimpedância' : 'Dobras Pollock'}
             </p>
             <div className="grid grid-cols-2 gap-2">
               {[['Peso', `${a.weight} kg`], ['IMC', a.bmi.toFixed(1)], ['% Gordura', a.body_fat_percentage ? `${a.body_fat_percentage}%` : '-'], ['Massa muscular', a.muscle_mass ? `${a.muscle_mass} kg` : '-']].map(([label, val]) => (
-                <div key={label} className="rounded-xl p-3" style={{ background: '#1A1A1A' }}>
+                <div key={label} className="rounded-xl p-3" style={{ background: '#262626' }}>
                   <p className="text-xs" style={{ color: '#555555' }}>{label}</p>
                   <p className="text-base font-bold mt-0.5" style={{ color: '#C8FF00', fontFamily: 'Poppins, sans-serif' }}>{val}</p>
                 </div>
@@ -481,7 +481,7 @@ function ExamesPanel({ studentId }: { studentId: string }) {
       </div>
 
       {adding && (
-        <div className="rounded-2xl border p-4 flex flex-col gap-3" style={{ background: '#222222', borderColor: 'rgba(200,255,0,0.3)' }}>
+        <div className="rounded-2xl border p-4 flex flex-col gap-3" style={{ background: '#2F2F2F', borderColor: 'rgba(200,255,0,0.3)' }}>
           <p className="text-xs font-semibold" style={{ color: '#C8FF00', fontFamily: 'Poppins, sans-serif' }}>Adicionar exame</p>
           <div><label className={lblCls} style={{ color: '#555555' }}>Nome do arquivo</label><input value={form.file_name} onChange={f('file_name')} placeholder="ex: hemograma_jun2025.pdf" className={iCls} style={iStyle} /></div>
           <div>
@@ -495,14 +495,14 @@ function ExamesPanel({ studentId }: { studentId: string }) {
         </div>
       )}
 
-      {isLoading ? <Skeleton className="h-14 rounded-xl" style={{ background: '#2A2A2A' }} />
+      {isLoading ? <Skeleton className="h-14 rounded-xl" style={{ background: '#3D3D3D' }} />
         : !exams.length ? (
           <div className="text-center py-4" style={{ color: '#555555' }}>
             <FileText size={28} className="mx-auto mb-2 opacity-30" />
             <p className="text-sm">Nenhum exame. Clique em Editar para adicionar.</p>
           </div>
         ) : exams.map(exam => (
-          <div key={exam.id} className="flex items-center justify-between p-3 rounded-xl border" style={{ background: '#222222', borderColor: '#2A2A2A' }}>
+          <div key={exam.id} className="flex items-center justify-between p-3 rounded-xl border" style={{ background: '#2F2F2F', borderColor: '#3D3D3D' }}>
             <div className="flex items-center gap-3">
               <span className="text-xl">{exam.file_type === 'pdf' ? '📄' : '🖼️'}</span>
               <div>
@@ -553,24 +553,24 @@ function EvolucaoPanel({ studentId }: { studentId: string }) {
       </div>
 
       {adding && (
-        <div className="rounded-2xl border p-4 flex flex-col gap-3" style={{ background: '#222222', borderColor: 'rgba(200,255,0,0.3)' }}>
+        <div className="rounded-2xl border p-4 flex flex-col gap-3" style={{ background: '#2F2F2F', borderColor: 'rgba(200,255,0,0.3)' }}>
           <p className="text-xs font-semibold" style={{ color: '#C8FF00', fontFamily: 'Poppins, sans-serif' }}>Registrar peso</p>
           <div><label className={lblCls} style={{ color: '#555555' }}>Peso (kg)</label><input type="number" step="0.1" value={form.weight} onChange={e => setForm(p => ({ ...p, weight: e.target.value }))} placeholder="ex: 72.5" className={iCls} style={iStyle} /></div>
           <div><label className={lblCls} style={{ color: '#555555' }}>Observação (opcional)</label><input value={form.note} onChange={e => setForm(p => ({ ...p, note: e.target.value }))} placeholder="ex: em jejum" className={iCls} style={iStyle} /></div>
         </div>
       )}
 
-      {isLoading ? <Skeleton className="h-32 rounded-xl" style={{ background: '#2A2A2A' }} /> : (
+      {isLoading ? <Skeleton className="h-32 rounded-xl" style={{ background: '#3D3D3D' }} /> : (
         <>
-          <div className="rounded-2xl border p-4" style={{ background: '#222222', borderColor: '#2A2A2A' }}>
+          <div className="rounded-2xl border p-4" style={{ background: '#2F2F2F', borderColor: '#3D3D3D' }}>
             <p className="text-xs uppercase tracking-wide mb-3" style={{ color: '#555555' }}>Evolução do peso</p>
             {chartData.length === 0 ? <p className="text-sm text-center py-4" style={{ color: '#555555' }}>Nenhum registro.</p> : (
               <ResponsiveContainer width="100%" height={140}>
                 <LineChart data={chartData}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#2A2A2A" />
+                  <CartesianGrid strokeDasharray="3 3" stroke="#3D3D3D" />
                   <XAxis dataKey="date" tick={{ fill: '#555555', fontSize: 10 }} axisLine={false} tickLine={false} />
                   <YAxis domain={['auto', 'auto']} tick={{ fill: '#555555', fontSize: 10 }} axisLine={false} tickLine={false} width={30} />
-                  <Tooltip contentStyle={{ background: '#1A1A1A', border: '1px solid #2A2A2A', borderRadius: '12px', color: '#FFFFFF' }} labelStyle={{ color: '#888888' }} />
+                  <Tooltip contentStyle={{ background: '#262626', border: '1px solid #2A2A2A', borderRadius: '12px', color: '#FFFFFF' }} labelStyle={{ color: '#888888' }} />
                   <Line type="monotone" dataKey="peso" stroke="#C8FF00" strokeWidth={2} dot={{ fill: '#C8FF00', r: 3 }} />
                 </LineChart>
               </ResponsiveContainer>
@@ -578,7 +578,7 @@ function EvolucaoPanel({ studentId }: { studentId: string }) {
           </div>
           <div className="flex flex-col gap-2">
             {history.slice(0, 6).map(w => (
-              <div key={w.id} className="flex items-center justify-between p-3 rounded-xl" style={{ background: '#222222' }}>
+              <div key={w.id} className="flex items-center justify-between p-3 rounded-xl" style={{ background: '#2F2F2F' }}>
                 <span className="text-xs" style={{ color: '#888888' }}>{new Date(w.recorded_at).toLocaleDateString('pt-BR')}</span>
                 <span className="text-sm font-bold" style={{ color: '#C8FF00', fontFamily: 'Poppins, sans-serif' }}>{w.weight} kg</span>
               </div>
@@ -627,9 +627,9 @@ function AssinaturaPanel({ student }: { student: Student }) {
           <p className="text-sm mb-3">Nenhuma assinatura. Clique em Editar para adicionar.</p>
         </div>
       ) : !editing ? (
-        <div className="rounded-2xl border p-4" style={{ background: '#222222', borderColor: '#2A2A2A' }}>
+        <div className="rounded-2xl border p-4" style={{ background: '#2F2F2F', borderColor: '#3D3D3D' }}>
           <InfoRow label="Plano" value={sub!.plan} />
-          <div className="flex flex-col gap-0.5 py-2.5 border-b" style={{ borderColor: '#2A2A2A' }}>
+          <div className="flex flex-col gap-0.5 py-2.5 border-b" style={{ borderColor: '#3D3D3D' }}>
             <span className="text-xs uppercase tracking-wide" style={{ color: '#555555' }}>Status</span>
             <span className="text-sm font-semibold" style={{ color: sColor(sub!.status) }}>{sub!.status}</span>
           </div>
@@ -638,7 +638,7 @@ function AssinaturaPanel({ student }: { student: Student }) {
           <InfoRow label="Valor" value={`R$ ${sub!.price.toFixed(2)}`} />
         </div>
       ) : (
-        <div className="rounded-2xl border p-4 flex flex-col gap-3" style={{ background: '#222222', borderColor: 'rgba(200,255,0,0.3)' }}>
+        <div className="rounded-2xl border p-4 flex flex-col gap-3" style={{ background: '#2F2F2F', borderColor: 'rgba(200,255,0,0.3)' }}>
           <div>
             <label className={lblCls} style={{ color: '#555555' }}>Plano</label>
             <select value={form.plan} onChange={f('plan')} className={iCls} style={iStyle}>
@@ -659,7 +659,7 @@ function AssinaturaPanel({ student }: { student: Student }) {
       {!editing && (
         <Button onClick={() => { setForm({ plan: sub?.plan ?? 'mensal', status: sub?.status ?? 'ativo', expires_at: sub?.expires_at ? sub.expires_at.split('T')[0] : '', price: String(sub?.price ?? '') }); setEditing(true) }}
           className="w-full font-semibold"
-          style={{ background: '#C8FF00', color: '#111111', borderRadius: '12px', fontFamily: 'Poppins, sans-serif' }}>
+          style={{ background: '#C8FF00', color: '#1C1C1C', borderRadius: '12px', fontFamily: 'Poppins, sans-serif' }}>
           Renovar / Editar assinatura
         </Button>
       )}
@@ -675,18 +675,18 @@ function SidePanel({ student, section, onClose, onSectionChange }: {
   onSectionChange: (s: PanelSection) => void
 }) {
   return (
-    <div className="flex flex-col rounded-2xl border overflow-hidden h-full" style={{ background: '#1A1A1A', borderColor: '#2A2A2A' }}>
+    <div className="flex flex-col rounded-2xl border overflow-hidden h-full" style={{ background: '#262626', borderColor: '#3D3D3D' }}>
       <PanelHeader student={student} section={section} onClose={onClose} />
 
       {/* Section nav */}
-      <div className="flex items-center gap-1 px-4 py-2 border-b overflow-x-auto flex-shrink-0" style={{ borderColor: '#2A2A2A' }}>
+      <div className="flex items-center gap-1 px-4 py-2 border-b overflow-x-auto flex-shrink-0" style={{ borderColor: '#3D3D3D' }}>
         {MENU_ITEMS.map(item => (
           <button
             key={item.key}
             onClick={() => onSectionChange(item.key)}
             className="px-3 py-1.5 rounded-xl text-xs whitespace-nowrap transition-all flex-shrink-0"
             style={section === item.key
-              ? { background: '#C8FF00', color: '#111111', fontWeight: 700, fontFamily: 'Poppins, sans-serif' }
+              ? { background: '#C8FF00', color: '#1C1C1C', fontWeight: 700, fontFamily: 'Poppins, sans-serif' }
               : { color: '#888888', background: 'transparent' }}
           >
             {item.label}
@@ -750,7 +750,7 @@ export default function AlunosPage() {
         subtitle={`${students.filter(s => s.status === 'ativo').length} alunos ativos`}
         action={
           <Link href="/alunos/novo">
-            <Button style={{ background: '#C8FF00', color: '#111111', borderRadius: '12px', fontFamily: 'Poppins, sans-serif', fontWeight: 600 }}>
+            <Button style={{ background: '#C8FF00', color: '#1C1C1C', borderRadius: '12px', fontFamily: 'Poppins, sans-serif', fontWeight: 600 }}>
               <Plus size={16} className="mr-2" /> Novo aluno
             </Button>
           </Link>
@@ -771,7 +771,7 @@ export default function AlunosPage() {
                 value={search}
                 onChange={e => setSearch(e.target.value)}
                 className="pl-9 border-0"
-                style={{ background: '#1A1A1A', color: '#FFFFFF', borderRadius: '12px', borderColor: '#2A2A2A' }}
+                style={{ background: '#262626', color: '#FFFFFF', borderRadius: '12px', borderColor: '#3D3D3D' }}
               />
             </div>
             <div className="flex gap-2">
@@ -781,8 +781,8 @@ export default function AlunosPage() {
                   onClick={() => setTab(t.key as typeof tab)}
                   className="px-4 py-2 rounded-xl text-sm font-medium transition-all"
                   style={tab === t.key
-                    ? { background: '#C8FF00', color: '#111111', fontFamily: 'Poppins, sans-serif' }
-                    : { background: '#1A1A1A', color: '#888888' }}
+                    ? { background: '#C8FF00', color: '#1C1C1C', fontFamily: 'Poppins, sans-serif' }
+                    : { background: '#262626', color: '#888888' }}
                 >
                   {t.label}
                 </button>
@@ -791,10 +791,10 @@ export default function AlunosPage() {
           </div>
 
           {/* Table */}
-          <div className="rounded-2xl border overflow-hidden" style={{ background: '#1A1A1A', borderColor: '#2A2A2A' }}>
+          <div className="rounded-2xl border overflow-hidden" style={{ background: '#262626', borderColor: '#3D3D3D' }}>
             {isLoading ? (
               <div className="p-6 flex flex-col gap-3">
-                {Array(4).fill(0).map((_, i) => <Skeleton key={i} className="h-16 rounded-xl" style={{ background: '#222222' }} />)}
+                {Array(4).fill(0).map((_, i) => <Skeleton key={i} className="h-16 rounded-xl" style={{ background: '#2F2F2F' }} />)}
               </div>
             ) : filtered.length === 0 ? (
               <div className="p-12 text-center" style={{ color: '#555555' }}>Nenhum aluno encontrado.</div>
@@ -826,7 +826,7 @@ export default function AlunosPage() {
                             className="flex items-center gap-3 w-full text-left hover:opacity-80 transition-opacity"
                           >
                             <div className="w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold flex-shrink-0"
-                              style={{ background: isSelected ? '#C8FF00' : '#333333', color: isSelected ? '#111111' : '#FFFFFF' }}>
+                              style={{ background: isSelected ? '#C8FF00' : '#333333', color: isSelected ? '#1C1C1C' : '#FFFFFF' }}>
                               {s.name.charAt(0)}
                             </div>
                             <div>
@@ -867,7 +867,7 @@ export default function AlunosPage() {
                             </DropdownMenuTrigger>
                             <DropdownMenuContent
                               align="end"
-                              style={{ background: '#1A1A1A', border: '1px solid #2A2A2A', borderRadius: '16px', minWidth: '180px', padding: '8px' }}
+                              style={{ background: '#262626', border: '1px solid #2A2A2A', borderRadius: '16px', minWidth: '180px', padding: '8px' }}
                             >
                               <p className="text-xs px-3 py-1.5 mb-1" style={{ color: '#555555' }}>Menu do aluno</p>
                               {MENU_ITEMS.map(item => (
@@ -882,7 +882,7 @@ export default function AlunosPage() {
                                   <ChevronRight size={13} className="ml-auto" style={{ color: '#555555' }} />
                                 </DropdownMenuItem>
                               ))}
-                              <DropdownMenuSeparator style={{ background: '#2A2A2A', margin: '4px 0' }} />
+                              <DropdownMenuSeparator style={{ background: '#3D3D3D', margin: '4px 0' }} />
                               <DropdownMenuItem
                                 onClick={() => {
                                   if (confirm(`Excluir ${s.name}?`))

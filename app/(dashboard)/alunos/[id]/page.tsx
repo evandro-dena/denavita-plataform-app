@@ -21,7 +21,7 @@ import { aiService } from '@/lib/api/ai'
 
 function InfoRow({ label, value }: { label: string; value?: string | number | null }) {
   return (
-    <div className="flex flex-col gap-0.5 py-3 border-b last:border-0" style={{ borderColor: '#2A2A2A' }}>
+    <div className="flex flex-col gap-0.5 py-3 border-b last:border-0" style={{ borderColor: '#3D3D3D' }}>
       <span className="text-xs uppercase tracking-wide" style={{ color: '#555555' }}>{label}</span>
       <span className="text-sm" style={{ color: value ? '#FFFFFF' : '#555555' }}>{value ?? '—'}</span>
     </div>
@@ -36,7 +36,7 @@ function MacroBar({ label, value, total, color }: { label: string; value: number
         <span style={{ color: '#888888' }}>{label}</span>
         <span style={{ color: '#FFFFFF' }}>{value}g</span>
       </div>
-      <div className="h-1.5 rounded-full" style={{ background: '#2A2A2A' }}>
+      <div className="h-1.5 rounded-full" style={{ background: '#3D3D3D' }}>
         <div className="h-full rounded-full transition-all" style={{ width: `${pct}%`, background: color }} />
       </div>
     </div>
@@ -112,12 +112,12 @@ function DietEditor({ plan, onSave, studentId }: {
     }
   }
 
-  const inputStyle = { background: '#111111', color: '#FFFFFF', borderRadius: '8px', borderColor: '#2A2A2A', fontSize: '13px' }
+  const inputStyle = { background: '#1C1C1C', color: '#FFFFFF', borderRadius: '8px', borderColor: '#3D3D3D', fontSize: '13px' }
 
   return (
     <div className="flex flex-col gap-6">
       {/* Totals bar */}
-      <div className="rounded-2xl p-5 border" style={{ background: '#1A1A1A', borderColor: '#2A2A2A' }}>
+      <div className="rounded-2xl p-5 border" style={{ background: '#262626', borderColor: '#3D3D3D' }}>
         <div className="flex items-center justify-between mb-4">
           <div>
             <span className="text-2xl font-bold" style={{ fontFamily: 'Poppins, sans-serif', color: '#C8FF00' }}>{totals.calories}</span>
@@ -130,7 +130,7 @@ function DietEditor({ plan, onSave, studentId }: {
               {generatingAI ? 'Gerando...' : 'Gerar com IA'}
             </Button>
             <Button size="sm" onClick={() => onSave({ meals, total_calories: totals.calories, total_protein: totals.protein, total_carbs: totals.carbs, total_fat: totals.fat })}
-              style={{ background: '#C8FF00', color: '#111111', borderRadius: '10px', fontWeight: 600 }}>
+              style={{ background: '#C8FF00', color: '#1C1C1C', borderRadius: '10px', fontWeight: 600 }}>
               Salvar plano
             </Button>
           </div>
@@ -146,9 +146,9 @@ function DietEditor({ plan, onSave, studentId }: {
       {meals.map(meal => {
         const mealTotals = meal.items.reduce((a, i) => ({ calories: a.calories + i.calories, protein: a.protein + i.protein, carbs: a.carbs + i.carbs, fat: a.fat + i.fat }), { calories: 0, protein: 0, carbs: 0, fat: 0 })
         return (
-          <div key={meal.id} className="rounded-2xl border" style={{ background: '#1A1A1A', borderColor: '#2A2A2A' }}>
+          <div key={meal.id} className="rounded-2xl border" style={{ background: '#262626', borderColor: '#3D3D3D' }}>
             {/* Meal header */}
-            <div className="p-5 border-b flex items-center gap-3" style={{ borderColor: '#2A2A2A' }}>
+            <div className="p-5 border-b flex items-center gap-3" style={{ borderColor: '#3D3D3D' }}>
               <input value={meal.emoji} onChange={e => updateMeal(meal.id, 'emoji', e.target.value)}
                 className="w-10 text-center text-xl bg-transparent border-0 outline-none" />
               <input value={meal.name} onChange={e => updateMeal(meal.id, 'name', e.target.value)}
@@ -156,7 +156,7 @@ function DietEditor({ plan, onSave, studentId }: {
                 style={{ color: '#FFFFFF' }} placeholder="Nome da refeição" />
               <input value={meal.time} onChange={e => updateMeal(meal.id, 'time', e.target.value)}
                 type="time" className="text-xs bg-transparent border rounded-lg px-2 py-1"
-                style={{ color: '#888888', borderColor: '#2A2A2A' }} />
+                style={{ color: '#888888', borderColor: '#3D3D3D' }} />
               <span className="text-xs" style={{ color: '#C8FF00' }}>{mealTotals.calories} kcal</span>
               <button onClick={() => removeMeal(meal.id)} className="text-xs px-2 py-1 rounded-lg hover:bg-red-500/10 transition-all"
                 style={{ color: '#EF4444' }}>✕</button>
@@ -257,7 +257,7 @@ export default function StudentProfilePage({ params }: { params: Promise<{ id: s
   const [pushTitle, setPushTitle] = useState('')
   const [pushBody, setPushBody] = useState('')
 
-  if (isLoading) return <div className="p-8"><Skeleton className="h-12 w-64 mb-4" style={{ background: '#1A1A1A' }} /></div>
+  if (isLoading) return <div className="p-8"><Skeleton className="h-12 w-64 mb-4" style={{ background: '#262626' }} /></div>
   if (!student) return <div className="p-8" style={{ color: '#888888' }}>Aluno não encontrado.</div>
 
   const chartData = weightHistory.map(w => ({
@@ -350,7 +350,7 @@ export default function StudentProfilePage({ params }: { params: Promise<{ id: s
         <SheetContent
           side="right"
           className="w-full max-w-md border-l"
-          style={{ background: '#1A1A1A', borderColor: '#2A2A2A' }}
+          style={{ background: '#262626', borderColor: '#3D3D3D' }}
         >
           <SheetHeader className="mb-6">
             <SheetTitle style={{ fontFamily: 'Poppins, sans-serif', color: '#FFFFFF', fontSize: '18px' }}>
@@ -374,8 +374,8 @@ export default function StudentProfilePage({ params }: { params: Promise<{ id: s
                 }}
                 className="flex items-center gap-2 px-3 py-2.5 rounded-xl border text-left transition-all"
                 style={{
-                  background: notifyTemplate === tpl.id ? 'rgba(200,255,0,0.08)' : '#222222',
-                  borderColor: notifyTemplate === tpl.id ? '#C8FF00' : '#2A2A2A',
+                  background: notifyTemplate === tpl.id ? 'rgba(200,255,0,0.08)' : '#2F2F2F',
+                  borderColor: notifyTemplate === tpl.id ? '#C8FF00' : '#3D3D3D',
                   color: notifyTemplate === tpl.id ? '#C8FF00' : '#888888',
                   fontSize: '12px',
                   fontWeight: notifyTemplate === tpl.id ? 600 : 400,
@@ -398,7 +398,7 @@ export default function StudentProfilePage({ params }: { params: Promise<{ id: s
               onChange={e => setWhatsappMsg(e.target.value)}
               rows={8}
               className="resize-none border text-sm leading-relaxed"
-              style={{ background: '#111111', color: '#FFFFFF', borderColor: '#2A2A2A', borderRadius: '12px' }}
+              style={{ background: '#1C1C1C', color: '#FFFFFF', borderColor: '#3D3D3D', borderRadius: '12px' }}
             />
             <p className="text-xs mt-1.5" style={{ color: '#555555' }}>
               {student.phone
@@ -416,9 +416,9 @@ export default function StudentProfilePage({ params }: { params: Promise<{ id: s
           </div>
 
           <div className="flex items-center gap-3 my-4">
-            <div className="flex-1 h-px" style={{ background: '#2A2A2A' }} />
+            <div className="flex-1 h-px" style={{ background: '#3D3D3D' }} />
             <span className="text-xs" style={{ color: '#555555' }}>ou</span>
-            <div className="flex-1 h-px" style={{ background: '#2A2A2A' }} />
+            <div className="flex-1 h-px" style={{ background: '#3D3D3D' }} />
           </div>
 
           {/* App notification section */}
@@ -436,7 +436,7 @@ export default function StudentProfilePage({ params }: { params: Promise<{ id: s
                 onChange={e => setPushTitle(e.target.value)}
                 placeholder="Ex: Nova aula disponível! 🎥"
                 className="w-full px-3 py-2.5 rounded-xl border text-sm font-bold outline-none focus:ring-1 focus:ring-[#C8FF00]"
-                style={{ background: '#111111', color: '#FFFFFF', borderColor: '#2A2A2A', fontFamily: 'Poppins, sans-serif' }}
+                style={{ background: '#1C1C1C', color: '#FFFFFF', borderColor: '#3D3D3D', fontFamily: 'Poppins, sans-serif' }}
               />
             </div>
 
@@ -449,17 +449,17 @@ export default function StudentProfilePage({ params }: { params: Promise<{ id: s
                 placeholder="Ex: Acesse o app e confira o conteúdo novo do seu plano."
                 rows={3}
                 className="w-full px-3 py-2.5 rounded-xl border text-sm resize-none outline-none focus:ring-1 focus:ring-[#C8FF00] leading-relaxed"
-                style={{ background: '#111111', color: '#FFFFFF', borderColor: '#2A2A2A' }}
+                style={{ background: '#1C1C1C', color: '#FFFFFF', borderColor: '#3D3D3D' }}
               />
             </div>
 
             {/* Preview */}
             {(pushTitle || pushBody) && (
-              <div className="mb-4 p-3 rounded-xl border" style={{ background: '#111111', borderColor: '#2A2A2A' }}>
+              <div className="mb-4 p-3 rounded-xl border" style={{ background: '#1C1C1C', borderColor: '#3D3D3D' }}>
                 <p className="text-xs mb-2" style={{ color: '#555555' }}>Prévia no celular</p>
                 <div className="flex items-start gap-2.5">
                   <div className="w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: '#C8FF00' }}>
-                    <Bell size={14} style={{ color: '#111111' }} />
+                    <Bell size={14} style={{ color: '#1C1C1C' }} />
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="text-xs font-bold leading-tight" style={{ color: '#FFFFFF', fontFamily: 'Poppins, sans-serif' }}>
@@ -500,7 +500,7 @@ export default function StudentProfilePage({ params }: { params: Promise<{ id: s
         </Link>
         <div className="flex items-center gap-4 flex-1">
           <div className="w-12 h-12 rounded-full flex items-center justify-center text-lg font-bold"
-            style={{ background: '#C8FF00', color: '#111111', fontFamily: 'Poppins, sans-serif' }}>
+            style={{ background: '#C8FF00', color: '#1C1C1C', fontFamily: 'Poppins, sans-serif' }}>
             {student.name.charAt(0)}
           </div>
           <div>
@@ -536,7 +536,7 @@ export default function StudentProfilePage({ params }: { params: Promise<{ id: s
       </div>
 
       <Tabs defaultValue="cadastro">
-        <TabsList className="mb-6 p-1 rounded-2xl" style={{ background: '#1A1A1A', border: '1px solid #2A2A2A' }}>
+        <TabsList className="mb-6 p-1 rounded-2xl" style={{ background: '#262626', border: '1px solid #2A2A2A' }}>
           {[
             { value: 'cadastro', label: 'Cadastro' },
             { value: 'anamnese', label: 'Anamnese' },
@@ -560,7 +560,7 @@ export default function StudentProfilePage({ params }: { params: Promise<{ id: s
 
         {/* CADASTRO */}
         <TabsContent value="cadastro">
-          <div className="rounded-2xl border p-6 max-w-lg" style={{ background: '#1A1A1A', borderColor: '#2A2A2A' }}>
+          <div className="rounded-2xl border p-6 max-w-lg" style={{ background: '#262626', borderColor: '#3D3D3D' }}>
             <InfoRow label="Nome" value={student.name} />
             <InfoRow label="E-mail" value={student.email} />
             <InfoRow label="Telefone" value={student.phone} />
@@ -575,7 +575,7 @@ export default function StudentProfilePage({ params }: { params: Promise<{ id: s
         {/* ANAMNESE */}
         <TabsContent value="anamnese">
           {!anamnesisData ? (
-            <div className="rounded-2xl border p-8 text-center" style={{ background: '#1A1A1A', borderColor: '#2A2A2A', color: '#555555' }}>
+            <div className="rounded-2xl border p-8 text-center" style={{ background: '#262626', borderColor: '#3D3D3D', color: '#555555' }}>
               Anamnese não preenchida pelo aluno ainda.
             </div>
           ) : (
@@ -598,11 +598,11 @@ export default function StudentProfilePage({ params }: { params: Promise<{ id: s
                 ['Período de fome', anamnesisData.periodo_fome],
                 ['Preferência alimentar', anamnesisData.preferencia_alimentar],
               ].map(([label, value]) => (
-                <div key={label} className="rounded-2xl border p-4" style={{ background: '#1A1A1A', borderColor: '#2A2A2A' }}>
+                <div key={label} className="rounded-2xl border p-4" style={{ background: '#262626', borderColor: '#3D3D3D' }}>
                   <InfoRow label={label as string} value={value as string} />
                 </div>
               ))}
-              <div className="col-span-2 rounded-2xl border p-4" style={{ background: '#1A1A1A', borderColor: '#2A2A2A' }}>
+              <div className="col-span-2 rounded-2xl border p-4" style={{ background: '#262626', borderColor: '#3D3D3D' }}>
                 <InfoRow label="Alimentação atual" value={anamnesisData.alimentacao_atual} />
               </div>
             </div>
@@ -612,13 +612,13 @@ export default function StudentProfilePage({ params }: { params: Promise<{ id: s
         {/* AVALIAÇÃO */}
         <TabsContent value="avaliacao">
           {assessments.length === 0 ? (
-            <div className="rounded-2xl border p-8 text-center" style={{ background: '#1A1A1A', borderColor: '#2A2A2A', color: '#555555' }}>
+            <div className="rounded-2xl border p-8 text-center" style={{ background: '#262626', borderColor: '#3D3D3D', color: '#555555' }}>
               Nenhuma avaliação registrada.
             </div>
           ) : (
             <div className="flex flex-col gap-4">
               {assessments.map(a => (
-                <div key={a.id} className="rounded-2xl border p-6" style={{ background: '#1A1A1A', borderColor: '#2A2A2A' }}>
+                <div key={a.id} className="rounded-2xl border p-6" style={{ background: '#262626', borderColor: '#3D3D3D' }}>
                   <div className="flex items-center justify-between mb-4">
                     <p className="font-semibold" style={{ fontFamily: 'Poppins, sans-serif', color: '#FFFFFF' }}>
                       {new Date(a.date).toLocaleDateString('pt-BR')} — {a.type === 'bioimpedance' ? 'Bioimpedância' : 'Dobras Pollock'}
@@ -632,7 +632,7 @@ export default function StudentProfilePage({ params }: { params: Promise<{ id: s
                       ['Gordura visceral', a.visceral_fat ? `${a.visceral_fat}` : '-'],
                       ['Massa óssea', a.bone_mass ? `${a.bone_mass} kg` : '-'],
                     ].map(([label, val]) => (
-                      <div key={label} className="rounded-xl p-3" style={{ background: '#222222' }}>
+                      <div key={label} className="rounded-xl p-3" style={{ background: '#2F2F2F' }}>
                         <p className="text-xs" style={{ color: '#555555' }}>{label}</p>
                         <p className="text-lg font-bold mt-1" style={{ fontFamily: 'Poppins, sans-serif', color: '#C8FF00' }}>{val}</p>
                       </div>
@@ -647,16 +647,16 @@ export default function StudentProfilePage({ params }: { params: Promise<{ id: s
         {/* EXAMES */}
         <TabsContent value="exames">
           {exams.length === 0 ? (
-            <div className="rounded-2xl border p-8 text-center" style={{ background: '#1A1A1A', borderColor: '#2A2A2A', color: '#555555' }}>
+            <div className="rounded-2xl border p-8 text-center" style={{ background: '#262626', borderColor: '#3D3D3D', color: '#555555' }}>
               Nenhum exame enviado.
             </div>
           ) : (
             <div className="flex flex-col gap-3">
               {exams.map(exam => (
-                <div key={exam.id} className="rounded-2xl border p-5" style={{ background: '#1A1A1A', borderColor: '#2A2A2A' }}>
+                <div key={exam.id} className="rounded-2xl border p-5" style={{ background: '#262626', borderColor: '#3D3D3D' }}>
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ background: '#222222' }}>
+                      <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ background: '#2F2F2F' }}>
                         {exam.file_type === 'pdf'
                           ? <span className="text-lg">📄</span>
                           : <span className="text-lg">🖼️</span>}
@@ -679,21 +679,21 @@ export default function StudentProfilePage({ params }: { params: Promise<{ id: s
                           : <span className="flex items-center gap-1"><Clock size={12} />Pendente</span>}
                       </Badge>
                       <a href={exam.file_url} target="_blank" rel="noopener noreferrer">
-                        <Button size="sm" variant="outline" style={{ borderRadius: '10px', borderColor: '#2A2A2A', color: '#888888' }}>
+                        <Button size="sm" variant="outline" style={{ borderRadius: '10px', borderColor: '#3D3D3D', color: '#888888' }}>
                           <Download size={14} className="mr-1" /> Baixar
                         </Button>
                       </a>
                       {exam.status === 'pendente' && (
                         <Button size="sm"
                           onClick={() => updateExam.mutate({ examId: exam.id, status: 'analisado', notes: 'Analisado pelo nutricionista.' })}
-                          style={{ background: '#C8FF00', color: '#111111', borderRadius: '10px', fontWeight: 600 }}>
+                          style={{ background: '#C8FF00', color: '#1C1C1C', borderRadius: '10px', fontWeight: 600 }}>
                           Marcar analisado
                         </Button>
                       )}
                     </div>
                   </div>
                   {exam.notes && (
-                    <div className="mt-3 p-3 rounded-xl" style={{ background: '#222222' }}>
+                    <div className="mt-3 p-3 rounded-xl" style={{ background: '#2F2F2F' }}>
                       <p className="text-xs" style={{ color: '#888888' }}>{exam.notes}</p>
                     </div>
                   )}
@@ -714,18 +714,18 @@ export default function StudentProfilePage({ params }: { params: Promise<{ id: s
 
         {/* EVOLUÇÃO */}
         <TabsContent value="evolucao">
-          <div className="rounded-2xl border p-6" style={{ background: '#1A1A1A', borderColor: '#2A2A2A' }}>
+          <div className="rounded-2xl border p-6" style={{ background: '#262626', borderColor: '#3D3D3D' }}>
             <h3 className="font-semibold mb-6" style={{ fontFamily: 'Poppins, sans-serif', color: '#FFFFFF' }}>Evolução do peso</h3>
             {chartData.length === 0 ? (
               <p className="text-sm" style={{ color: '#555555' }}>Nenhum registro de peso.</p>
             ) : (
               <ResponsiveContainer width="100%" height={280}>
                 <LineChart data={chartData}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#2A2A2A" />
+                  <CartesianGrid strokeDasharray="3 3" stroke="#3D3D3D" />
                   <XAxis dataKey="date" tick={{ fill: '#555555', fontSize: 12 }} axisLine={false} tickLine={false} />
                   <YAxis domain={['auto', 'auto']} tick={{ fill: '#555555', fontSize: 12 }} axisLine={false} tickLine={false} />
                   <Tooltip
-                    contentStyle={{ background: '#1A1A1A', border: '1px solid #2A2A2A', borderRadius: '12px', color: '#FFFFFF' }}
+                    contentStyle={{ background: '#262626', border: '1px solid #2A2A2A', borderRadius: '12px', color: '#FFFFFF' }}
                     labelStyle={{ color: '#888888' }}
                   />
                   <Line type="monotone" dataKey="peso" stroke="#C8FF00" strokeWidth={2.5} dot={{ fill: '#C8FF00', r: 4 }} />
@@ -738,18 +738,18 @@ export default function StudentProfilePage({ params }: { params: Promise<{ id: s
         {/* ASSINATURA */}
         <TabsContent value="assinatura">
           {!student.subscription ? (
-            <div className="rounded-2xl border p-8 text-center" style={{ background: '#1A1A1A', borderColor: '#2A2A2A', color: '#555555' }}>
+            <div className="rounded-2xl border p-8 text-center" style={{ background: '#262626', borderColor: '#3D3D3D', color: '#555555' }}>
               Nenhuma assinatura ativa.
             </div>
           ) : (
-            <div className="rounded-2xl border p-6 max-w-sm" style={{ background: '#1A1A1A', borderColor: '#2A2A2A' }}>
+            <div className="rounded-2xl border p-6 max-w-sm" style={{ background: '#262626', borderColor: '#3D3D3D' }}>
               <InfoRow label="Plano" value={student.subscription.plan} />
               <InfoRow label="Status" value={student.subscription.status} />
               <InfoRow label="Início" value={new Date(student.subscription.started_at).toLocaleDateString('pt-BR')} />
               <InfoRow label="Expira em" value={new Date(student.subscription.expires_at).toLocaleDateString('pt-BR')} />
               <InfoRow label="Valor" value={`R$ ${student.subscription.price.toFixed(2)}`} />
               <Button className="mt-5 w-full"
-                style={{ background: '#C8FF00', color: '#111111', borderRadius: '12px', fontFamily: 'Poppins, sans-serif', fontWeight: 600 }}>
+                style={{ background: '#C8FF00', color: '#1C1C1C', borderRadius: '12px', fontFamily: 'Poppins, sans-serif', fontWeight: 600 }}>
                 Renovar assinatura
               </Button>
             </div>

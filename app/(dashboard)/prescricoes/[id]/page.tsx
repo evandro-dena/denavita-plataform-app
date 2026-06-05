@@ -64,12 +64,12 @@ function Editor({ plan, onSave }: { plan: DietPlan; onSave: (p: Partial<DietPlan
           value={name}
           onChange={e => setName(e.target.value)}
           className="flex-1 bg-transparent border-b pb-1 text-sm outline-none focus:border-[#C8FF00] transition-colors"
-          style={{ color: '#FFFFFF', borderColor: '#2A2A2A' }}
+          style={{ color: '#FFFFFF', borderColor: '#3D3D3D' }}
           placeholder="Nome da prescrição"
         />
         <div className="flex gap-2 flex-shrink-0">
           <Button onClick={() => toast.info('PDF em breve!')} variant="outline" size="sm"
-            style={{ borderColor: '#2A2A2A', color: '#888888', borderRadius: '10px' }}>
+            style={{ borderColor: '#3D3D3D', color: '#888888', borderRadius: '10px' }}>
             Gerar PDF
           </Button>
           <Button size="sm" onClick={() => onSave({
@@ -78,14 +78,14 @@ function Editor({ plan, onSave }: { plan: DietPlan; onSave: (p: Partial<DietPlan
             total_carbs: Number(nutrients.carbs), total_fat: Number(nutrients.fat),
             supplements, manipulated, shopping_list: shoppingList,
           })}
-            style={{ background: '#C8FF00', color: '#111111', borderRadius: '10px', fontWeight: 700, fontFamily: 'Poppins, sans-serif' }}>
+            style={{ background: '#C8FF00', color: '#1C1C1C', borderRadius: '10px', fontWeight: 700, fontFamily: 'Poppins, sans-serif' }}>
             <Save size={13} className="mr-1.5" /> Atualizar Prescrição
           </Button>
         </div>
       </div>
 
       {/* Dieta section */}
-      <div className="rounded-2xl border p-5" style={{ background: '#1A1A1A', borderColor: '#2A2A2A' }}>
+      <div className="rounded-2xl border p-5" style={{ background: '#262626', borderColor: '#3D3D3D' }}>
         <div className="flex items-center gap-2 mb-1">
           <span className="text-lg">✂️</span>
           <h3 className="font-semibold text-sm" style={{ color: '#FFFFFF', fontFamily: 'Poppins, sans-serif' }}>Dieta</h3>
@@ -95,7 +95,7 @@ function Editor({ plan, onSave }: { plan: DietPlan; onSave: (p: Partial<DietPlan
         </p>
 
         <Button onClick={addMeal} size="sm"
-          style={{ background: '#C8FF00', color: '#111111', borderRadius: '10px', fontFamily: 'Poppins, sans-serif', fontWeight: 700, marginBottom: '16px' }}>
+          style={{ background: '#C8FF00', color: '#1C1C1C', borderRadius: '10px', fontFamily: 'Poppins, sans-serif', fontWeight: 700, marginBottom: '16px' }}>
           <Plus size={13} className="mr-1.5" /> Nova Refeição
         </Button>
 
@@ -103,12 +103,12 @@ function Editor({ plan, onSave }: { plan: DietPlan; onSave: (p: Partial<DietPlan
           {meals.map(meal => {
             const isOpen = expanded.has(meal.id)
             return (
-              <div key={meal.id} className="rounded-xl border overflow-hidden transition-all" style={{ borderColor: isOpen ? 'rgba(200,255,0,0.25)' : '#2A2A2A' }}>
+              <div key={meal.id} className="rounded-xl border overflow-hidden transition-all" style={{ borderColor: isOpen ? 'rgba(200,255,0,0.25)' : '#3D3D3D' }}>
 
                 {/* Header — always visible, click to expand */}
                 <div
                   className="flex items-center gap-3 px-4 py-3 cursor-pointer select-none"
-                  style={{ background: '#222222' }}
+                  style={{ background: '#2F2F2F' }}
                   onClick={() => toggleExpand(meal.id)}
                 >
                   <AlignJustify size={14} style={{ color: '#555555' }} className="flex-shrink-0" onClick={e => e.stopPropagation()} />
@@ -144,7 +144,7 @@ function Editor({ plan, onSave }: { plan: DietPlan; onSave: (p: Partial<DietPlan
 
                 {/* Body — only when expanded */}
                 {isOpen && (
-                  <div className="px-4 py-4 flex flex-col gap-3" style={{ background: '#1A1A1A' }}>
+                  <div className="px-4 py-4 flex flex-col gap-3" style={{ background: '#262626' }}>
                     <div className="grid grid-cols-3 gap-3">
                       {[
                         { label: 'Nome (Português)', field: 'name' as const, value: meal.name },
@@ -157,7 +157,7 @@ function Editor({ plan, onSave }: { plan: DietPlan; onSave: (p: Partial<DietPlan
                             value={f.value}
                             onChange={e => updateMeal(meal.id, f.field, e.target.value)}
                             className="w-full bg-transparent border-b pb-1 text-xs outline-none focus:border-[#C8FF00] transition-colors"
-                            style={{ color: '#FFFFFF', borderColor: '#2A2A2A' }}
+                            style={{ color: '#FFFFFF', borderColor: '#3D3D3D' }}
                           />
                         </div>
                       ))}
@@ -171,7 +171,7 @@ function Editor({ plan, onSave }: { plan: DietPlan; onSave: (p: Partial<DietPlan
                         rows={4}
                         placeholder="[Texto livre até 10.000 caracteres]"
                         className="flex-1 resize-none border rounded-xl px-3 py-2.5 text-sm outline-none leading-relaxed focus:border-[#C8FF00] transition-colors"
-                        style={{ background: '#222222', color: '#FFFFFF', borderColor: '#2A2A2A' }}
+                        style={{ background: '#2F2F2F', color: '#FFFFFF', borderColor: '#3D3D3D' }}
                       />
                     </div>
                   </div>
@@ -183,7 +183,7 @@ function Editor({ plan, onSave }: { plan: DietPlan; onSave: (p: Partial<DietPlan
       </div>
 
       {/* Nutrients */}
-      <div className="rounded-2xl border p-5" style={{ background: '#1A1A1A', borderColor: '#2A2A2A' }}>
+      <div className="rounded-2xl border p-5" style={{ background: '#262626', borderColor: '#3D3D3D' }}>
         <div className="grid grid-cols-4 gap-4 mb-4">
           {([
             { label: 'KCal',        key: 'kcal'    as const, color: '#C8FF00' },
@@ -197,14 +197,14 @@ function Editor({ plan, onSave }: { plan: DietPlan; onSave: (p: Partial<DietPlan
                 <input type="number" value={nutrients[n.key]}
                   onChange={e => setNutrients(p => ({ ...p, [n.key]: e.target.value }))}
                   className="w-20 bg-transparent border-b pb-1 text-base font-bold outline-none"
-                  style={{ color: n.color, borderColor: '#2A2A2A' }} />
+                  style={{ color: n.color, borderColor: '#3D3D3D' }} />
                 {n.key !== 'kcal' && <span className="text-xs" style={{ color: '#555555' }}>g</span>}
               </div>
             </div>
           ))}
         </div>
         <Button size="sm" onClick={() => toast.success('Nutrientes atualizados!')}
-          style={{ background: '#C8FF00', color: '#111111', borderRadius: '10px', fontFamily: 'Poppins, sans-serif', fontWeight: 700 }}>
+          style={{ background: '#C8FF00', color: '#1C1C1C', borderRadius: '10px', fontFamily: 'Poppins, sans-serif', fontWeight: 700 }}>
           Atualizar Nutrientes
         </Button>
       </div>
@@ -216,7 +216,7 @@ function Editor({ plan, onSave }: { plan: DietPlan; onSave: (p: Partial<DietPlan
           { label: '💊 Manipulados',      value: manipulated,  onChange: setManipulated },
           { label: '🛒 Lista de compras', value: shoppingList, onChange: setShoppingList },
         ].map(s => (
-          <div key={s.label} className="rounded-2xl border p-4" style={{ background: '#1A1A1A', borderColor: '#2A2A2A' }}>
+          <div key={s.label} className="rounded-2xl border p-4" style={{ background: '#262626', borderColor: '#3D3D3D' }}>
             <p className="text-sm font-semibold mb-3" style={{ fontFamily: 'Poppins, sans-serif', color: '#FFFFFF' }}>{s.label}</p>
             <textarea value={s.value} onChange={e => s.onChange(e.target.value)} rows={5}
               className="w-full resize-none bg-transparent text-sm outline-none leading-relaxed"
@@ -250,7 +250,7 @@ export default function EditPrescricaoPage({ params }: { params: Promise<{ id: s
     },
   })
 
-  if (isLoading) return <div className="p-8"><Skeleton className="h-10 w-64" style={{ background: '#1A1A1A' }} /></div>
+  if (isLoading) return <div className="p-8"><Skeleton className="h-10 w-64" style={{ background: '#262626' }} /></div>
   if (!plan) return <div className="p-8" style={{ color: '#888888' }}>Plano não encontrado.</div>
 
   return (

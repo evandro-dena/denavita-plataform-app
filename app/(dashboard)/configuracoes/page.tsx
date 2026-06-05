@@ -5,11 +5,11 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 
 export default function ConfiguracoesPage() {
-  const inputStyle = { background: '#1A1A1A', color: '#FFFFFF', borderRadius: '12px', borderColor: '#2A2A2A' }
+  const inputStyle = { background: '#262626', color: '#FFFFFF', borderRadius: '12px', borderColor: '#3D3D3D' }
   return (
     <div>
       <Topbar title="Configurações" subtitle="Perfil do nutricionista" />
-      <div className="rounded-2xl border p-8 max-w-lg" style={{ background: '#1A1A1A', borderColor: '#2A2A2A' }}>
+      <div className="rounded-2xl border p-8 max-w-lg" style={{ background: '#262626', borderColor: '#3D3D3D' }}>
         <div className="flex flex-col gap-5">
           <div>
             <Label style={{ color: '#888888', fontSize: '13px' }}>Nome completo</Label>
@@ -23,7 +23,7 @@ export default function ConfiguracoesPage() {
             <Label style={{ color: '#888888', fontSize: '13px' }}>CRN</Label>
             <Input defaultValue="CRN-3 12345" className="mt-1.5 border" style={inputStyle} />
           </div>
-          <Button style={{ background: '#C8FF00', color: '#111111', borderRadius: '12px', fontFamily: 'Poppins, sans-serif', fontWeight: 600, alignSelf: 'flex-start', marginTop: '8px' }}>
+          <Button style={{ background: '#C8FF00', color: '#1C1C1C', borderRadius: '12px', fontFamily: 'Poppins, sans-serif', fontWeight: 600, alignSelf: 'flex-start', marginTop: '8px' }}>
             Salvar alterações
           </Button>
         </div>

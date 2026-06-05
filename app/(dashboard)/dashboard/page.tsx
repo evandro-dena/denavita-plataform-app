@@ -111,13 +111,13 @@ function ContactSheet({ student, context, onClose }: ContactSheetProps) {
       <SheetContent
         side="right"
         className="w-full max-w-md border-l p-0 overflow-y-auto"
-        style={{ background: '#1A1A1A', borderColor: '#2A2A2A' }}
+        style={{ background: '#262626', borderColor: '#3D3D3D' }}
       >
         {/* Header */}
-        <div className="flex items-center justify-between px-6 pt-6 pb-4 border-b" style={{ borderColor: '#2A2A2A' }}>
+        <div className="flex items-center justify-between px-6 pt-6 pb-4 border-b" style={{ borderColor: '#3D3D3D' }}>
           <div className="flex items-center gap-3">
             <div className="w-11 h-11 rounded-full flex items-center justify-center text-base font-bold flex-shrink-0"
-              style={{ background: '#C8FF00', color: '#111111', fontFamily: 'Poppins, sans-serif' }}>
+              style={{ background: '#C8FF00', color: '#1C1C1C', fontFamily: 'Poppins, sans-serif' }}>
               {student.name.charAt(0)}
             </div>
             <div>
@@ -144,8 +144,8 @@ function ContactSheet({ student, context, onClose }: ContactSheetProps) {
                   onClick={() => selectTemplate(tpl.id)}
                   className="flex items-center gap-2 px-3 py-2.5 rounded-xl border text-left transition-all"
                   style={{
-                    background: selectedTemplate === tpl.id ? 'rgba(200,255,0,0.08)' : '#222222',
-                    borderColor: selectedTemplate === tpl.id ? '#C8FF00' : '#2A2A2A',
+                    background: selectedTemplate === tpl.id ? 'rgba(200,255,0,0.08)' : '#2F2F2F',
+                    borderColor: selectedTemplate === tpl.id ? '#C8FF00' : '#3D3D3D',
                     color: selectedTemplate === tpl.id ? '#C8FF00' : '#888888',
                     fontSize: '12px',
                     fontWeight: selectedTemplate === tpl.id ? 600 : 400,
@@ -160,7 +160,7 @@ function ContactSheet({ student, context, onClose }: ContactSheetProps) {
 
           {/* Status info */}
           {context === 'vencimento' && (
-            <div className="flex items-center gap-2 p-3 rounded-xl" style={{ background: '#222222' }}>
+            <div className="flex items-center gap-2 p-3 rounded-xl" style={{ background: '#2F2F2F' }}>
               <Clock size={14} style={{ color: isVencido ? '#EF4444' : '#F59E0B' }} />
               <span className="text-sm" style={{ color: '#888888' }}>
                 Plano{' '}
@@ -173,7 +173,7 @@ function ContactSheet({ student, context, onClose }: ContactSheetProps) {
           )}
 
           {context === 'dieta' && (
-            <div className="flex items-center gap-2 p-3 rounded-xl" style={{ background: '#222222' }}>
+            <div className="flex items-center gap-2 p-3 rounded-xl" style={{ background: '#2F2F2F' }}>
               <ClipboardCheck size={14} style={{ color: '#F59E0B' }} />
               <span className="text-sm" style={{ color: '#888888' }}>
                 Anamnese preenchida — <strong style={{ color: '#F59E0B' }}>dieta aguardando revisão</strong>
@@ -195,7 +195,7 @@ function ContactSheet({ student, context, onClose }: ContactSheetProps) {
               onChange={e => setMsg(e.target.value)}
               rows={6}
               className="resize-none border text-sm leading-relaxed"
-              style={{ background: '#111111', color: '#FFFFFF', borderColor: '#2A2A2A', borderRadius: '12px' }}
+              style={{ background: '#1C1C1C', color: '#FFFFFF', borderColor: '#3D3D3D', borderRadius: '12px' }}
             />
             {!student.phone && (
               <p className="text-xs mt-1" style={{ color: '#EF4444' }}>
@@ -214,9 +214,9 @@ function ContactSheet({ student, context, onClose }: ContactSheetProps) {
 
           {/* Divider */}
           <div className="flex items-center gap-3">
-            <div className="flex-1 h-px" style={{ background: '#2A2A2A' }} />
+            <div className="flex-1 h-px" style={{ background: '#3D3D3D' }} />
             <span className="text-xs" style={{ color: '#555555' }}>ou</span>
-            <div className="flex-1 h-px" style={{ background: '#2A2A2A' }} />
+            <div className="flex-1 h-px" style={{ background: '#3D3D3D' }} />
           </div>
 
           {/* App notification */}
@@ -233,7 +233,7 @@ function ContactSheet({ student, context, onClose }: ContactSheetProps) {
                 onChange={e => setPushTitle(e.target.value)}
                 placeholder="Ex: Nova aula disponível! 🎥"
                 className="w-full px-3 py-2.5 rounded-xl border text-sm font-bold outline-none focus:ring-1 focus:ring-[#C8FF00]"
-                style={{ background: '#111111', color: '#FFFFFF', borderColor: '#2A2A2A', fontFamily: 'Poppins, sans-serif' }}
+                style={{ background: '#1C1C1C', color: '#FFFFFF', borderColor: '#3D3D3D', fontFamily: 'Poppins, sans-serif' }}
               />
             </div>
 
@@ -245,16 +245,16 @@ function ContactSheet({ student, context, onClose }: ContactSheetProps) {
                 placeholder="Ex: Acesse o app e confira o conteúdo novo do seu plano."
                 rows={3}
                 className="w-full px-3 py-2.5 rounded-xl border text-sm resize-none outline-none focus:ring-1 focus:ring-[#C8FF00] leading-relaxed"
-                style={{ background: '#111111', color: '#FFFFFF', borderColor: '#2A2A2A' }}
+                style={{ background: '#1C1C1C', color: '#FFFFFF', borderColor: '#3D3D3D' }}
               />
             </div>
 
             {(pushTitle || pushBody) && (
-              <div className="mb-4 p-3 rounded-xl border" style={{ background: '#111111', borderColor: '#2A2A2A' }}>
+              <div className="mb-4 p-3 rounded-xl border" style={{ background: '#1C1C1C', borderColor: '#3D3D3D' }}>
                 <p className="text-xs mb-2" style={{ color: '#555555' }}>Prévia no celular</p>
                 <div className="flex items-start gap-2.5">
                   <div className="w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: '#C8FF00' }}>
-                    <Bell size={14} style={{ color: '#111111' }} />
+                    <Bell size={14} style={{ color: '#1C1C1C' }} />
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="text-xs font-bold leading-tight" style={{ color: '#FFFFFF', fontFamily: 'Poppins, sans-serif' }}>
@@ -290,11 +290,11 @@ function ContactSheet({ student, context, onClose }: ContactSheetProps) {
           </div>
 
           {/* Footer actions */}
-          <div className="flex flex-col gap-2 pt-2 border-t" style={{ borderColor: '#2A2A2A' }}>
+          <div className="flex flex-col gap-2 pt-2 border-t" style={{ borderColor: '#3D3D3D' }}>
             {context === 'dieta' && (
               <Link href={`/alunos/${student.id}?tab=prescricao`} onClick={onClose}>
                 <Button className="w-full font-semibold"
-                  style={{ background: '#C8FF00', color: '#111111', borderRadius: '12px', fontFamily: 'Poppins, sans-serif' }}>
+                  style={{ background: '#C8FF00', color: '#1C1C1C', borderRadius: '12px', fontFamily: 'Poppins, sans-serif' }}>
                   <ClipboardCheck size={14} className="mr-2" />
                   Ir para prescrição
                 </Button>
@@ -321,9 +321,9 @@ function StatCard({ label, value, icon: Icon, accent = false, warning = false }:
   label: string; value: number; icon: React.ElementType; accent?: boolean; warning?: boolean
 }) {
   return (
-    <div className="rounded-2xl p-6 border flex items-center gap-4" style={{ background: '#1A1A1A', borderColor: '#2A2A2A' }}>
+    <div className="rounded-2xl p-6 border flex items-center gap-4" style={{ background: '#262626', borderColor: '#3D3D3D' }}>
       <div className="w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0"
-        style={{ background: accent ? 'rgba(200,255,0,0.12)' : warning ? 'rgba(245,158,11,0.12)' : '#222222' }}>
+        style={{ background: accent ? 'rgba(200,255,0,0.12)' : warning ? 'rgba(245,158,11,0.12)' : '#2F2F2F' }}>
         <Icon size={22} style={{ color: accent ? '#C8FF00' : warning ? '#F59E0B' : '#888888' }} />
       </div>
       <div>
@@ -373,7 +373,7 @@ export default function DashboardPage() {
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
         {isLoading ? (
           Array(4).fill(0).map((_, i) => (
-            <Skeleton key={i} className="h-28 rounded-2xl" style={{ background: '#1A1A1A' }} />
+            <Skeleton key={i} className="h-28 rounded-2xl" style={{ background: '#262626' }} />
           ))
         ) : (
           <>
@@ -389,7 +389,7 @@ export default function DashboardPage() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
 
         {/* Planos vencendo */}
-        <div className="rounded-2xl border p-6" style={{ background: '#1A1A1A', borderColor: '#2A2A2A' }}>
+        <div className="rounded-2xl border p-6" style={{ background: '#262626', borderColor: '#3D3D3D' }}>
           <h2 className="font-semibold text-base mb-4" style={{ fontFamily: 'Poppins, sans-serif', color: '#FFFFFF' }}>
             Planos vencendo
           </h2>
@@ -402,11 +402,11 @@ export default function DashboardPage() {
                   key={s.id}
                   onClick={() => setSelected({ student: s, context: 'vencimento' })}
                   className="flex items-center justify-between p-3 rounded-xl hover:bg-white/5 transition-all w-full text-left"
-                  style={{ background: '#222222' }}
+                  style={{ background: '#2F2F2F' }}
                 >
                   <div className="flex items-center gap-3">
                     <div className="w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold flex-shrink-0"
-                      style={{ background: '#C8FF00', color: '#111111' }}>
+                      style={{ background: '#C8FF00', color: '#1C1C1C' }}>
                       {s.name.charAt(0)}
                     </div>
                     <div>
@@ -435,7 +435,7 @@ export default function DashboardPage() {
         </div>
 
         {/* Alunos que faltam analisar a dieta */}
-        <div className="rounded-2xl border p-6" style={{ background: '#1A1A1A', borderColor: '#2A2A2A' }}>
+        <div className="rounded-2xl border p-6" style={{ background: '#262626', borderColor: '#3D3D3D' }}>
           <div className="flex items-center justify-between mb-4">
             <h2 className="font-semibold text-base" style={{ fontFamily: 'Poppins, sans-serif', color: '#FFFFFF' }}>
               Alunos que faltam analisar a dieta
@@ -459,7 +459,7 @@ export default function DashboardPage() {
                   key={s.id}
                   onClick={() => setSelected({ student: s, context: 'dieta' })}
                   className="flex items-center justify-between p-3 rounded-xl hover:bg-white/5 transition-all w-full text-left"
-                  style={{ background: '#222222' }}
+                  style={{ background: '#2F2F2F' }}
                 >
                   <div className="flex items-center gap-3">
                     <div className="w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold flex-shrink-0"

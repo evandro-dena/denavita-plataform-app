@@ -16,11 +16,11 @@ export default function Sidebar() {
   const pathname = usePathname()
 
   return (
-    <aside className="fixed left-0 top-0 h-screen w-64 flex flex-col border-r" style={{ background: '#1A1A1A', borderColor: '#2A2A2A' }}>
+    <aside className="fixed left-0 top-0 h-screen w-64 flex flex-col border-r" style={{ background: '#262626', borderColor: '#3D3D3D' }}>
       {/* Logo */}
-      <div className="flex items-center gap-3 px-6 py-6 border-b" style={{ borderColor: '#2A2A2A' }}>
+      <div className="flex items-center gap-3 px-6 py-6 border-b" style={{ borderColor: '#3D3D3D' }}>
         <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: '#C8FF00' }}>
-          <Dumbbell size={16} style={{ color: '#111111' }} />
+          <Dumbbell size={16} style={{ color: '#1C1C1C' }} />
         </div>
         <div>
           <p className="font-bold text-sm" style={{ fontFamily: 'Poppins, sans-serif', color: '#FFFFFF' }}>DenaVita</p>
@@ -42,7 +42,7 @@ export default function Sidebar() {
                   ? 'text-black font-semibold'
                   : 'hover:bg-white/5'
               )}
-              style={active ? { background: '#C8FF00', color: '#111111' } : { color: '#888888' }}
+              style={active ? { background: '#C8FF00', color: '#1C1C1C' } : { color: '#888888' }}
             >
               <Icon size={18} />
               {label}
@@ -52,7 +52,7 @@ export default function Sidebar() {
       </nav>
 
       {/* Footer */}
-      <div className="px-4 py-4 border-t" style={{ borderColor: '#2A2A2A' }}>
+      <div className="px-4 py-4 border-t" style={{ borderColor: '#3D3D3D' }}>
         <button
           className="flex items-center gap-3 px-4 py-3 rounded-xl text-sm w-full transition-all hover:bg-white/5"
           style={{ color: '#888888' }}

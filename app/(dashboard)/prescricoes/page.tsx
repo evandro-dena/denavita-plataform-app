@@ -51,7 +51,7 @@ export default function PrescricoesPage() {
         subtitle={`${plans.length} plano${plans.length !== 1 ? 's' : ''} · Crie planos nutricionais e envie para seus alunos`}
         action={
           <Link href="/prescricoes/nova">
-            <Button style={{ background: '#C8FF00', color: '#111111', borderRadius: '12px', fontFamily: 'Poppins, sans-serif', fontWeight: 600 }}>
+            <Button style={{ background: '#C8FF00', color: '#1C1C1C', borderRadius: '12px', fontFamily: 'Poppins, sans-serif', fontWeight: 600 }}>
               <Plus size={16} className="mr-2" /> Nova
             </Button>
           </Link>
@@ -61,20 +61,20 @@ export default function PrescricoesPage() {
       <div className="relative mb-5">
         <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2" style={{ color: '#555555' }} />
         <Input placeholder="Buscar plano..." value={search} onChange={e => setSearch(e.target.value)}
-          className="pl-9 border" style={{ background: '#1A1A1A', color: '#FFFFFF', borderRadius: '12px', borderColor: '#2A2A2A' }} />
+          className="pl-9 border" style={{ background: '#262626', color: '#FFFFFF', borderRadius: '12px', borderColor: '#3D3D3D' }} />
       </div>
 
-      <div className="rounded-2xl border overflow-hidden" style={{ background: '#1A1A1A', borderColor: '#2A2A2A' }}>
+      <div className="rounded-2xl border overflow-hidden" style={{ background: '#262626', borderColor: '#3D3D3D' }}>
         {isLoading ? (
           <div className="p-6 flex flex-col gap-3">
-            {Array(5).fill(0).map((_, i) => <Skeleton key={i} className="h-14 rounded-xl" style={{ background: '#222222' }} />)}
+            {Array(5).fill(0).map((_, i) => <Skeleton key={i} className="h-14 rounded-xl" style={{ background: '#2F2F2F' }} />)}
           </div>
         ) : filtered.length === 0 ? (
           <div className="p-16 text-center flex flex-col items-center gap-3" style={{ color: '#555555' }}>
             <FileText size={36} className="opacity-30" />
             <p className="text-sm">Nenhum plano encontrado.</p>
             <Link href="/prescricoes/nova">
-              <Button size="sm" style={{ background: '#C8FF00', color: '#111111', borderRadius: '10px', fontFamily: 'Poppins, sans-serif' }}>
+              <Button size="sm" style={{ background: '#C8FF00', color: '#1C1C1C', borderRadius: '10px', fontFamily: 'Poppins, sans-serif' }}>
                 <Plus size={14} className="mr-1.5" /> Criar primeiro plano
               </Button>
             </Link>
@@ -121,7 +121,7 @@ export default function PrescricoesPage() {
                           </button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end"
-                          style={{ background: '#1A1A1A', border: '1px solid #2A2A2A', borderRadius: '14px', minWidth: '160px', padding: '8px' }}>
+                          style={{ background: '#262626', border: '1px solid #2A2A2A', borderRadius: '14px', minWidth: '160px', padding: '8px' }}>
                           <DropdownMenuItem onClick={() => toast.info('PDF em breve!')}
                             className="flex items-center gap-2.5 px-3 py-2 rounded-xl cursor-pointer" style={{ color: '#FFFFFF' }}>
                             <FileText size={14} style={{ color: '#888888' }} /> Gerar PDF
