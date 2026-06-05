@@ -1,5 +1,5 @@
 import { Student, Anamnesis, Assessment, Exam, WeightRecord } from '@/types'
-import { MOCK_STUDENTS, MOCK_ANAMNESIS, MOCK_ASSESSMENTS, MOCK_EXAMS, MOCK_WEIGHT_HISTORY } from './mock-data'
+import { MOCK_STUDENTS, MOCK_ANAMNESIS, MOCK_ASSESSMENTS, MOCK_EXAMS, MOCK_WEIGHT_HISTORY, MOCK_NEEDS_DIET_REVIEW } from './mock-data'
 
 export const studentService = {
   async list(nutritionistId: string): Promise<Student[]> {
@@ -43,6 +43,22 @@ export const studentService = {
   async delete(id: string): Promise<void> {
     // TODO: conectar Supabase
     void id
+    await new Promise(r => setTimeout(r, 200))
+  },
+}
+
+export const dietReviewService = {
+  // Returns students who filled the anamnesis app quiz but nutritionist hasn't verified/approved the AI diet yet
+  // TODO: Supabase query — join profiles + anamnesis + diet_plans where diet_plans.verified_at IS NULL
+  async getNeedingReview(nutritionistId: string): Promise<Student[]> {
+    void nutritionistId
+    await new Promise(r => setTimeout(r, 300))
+    return MOCK_STUDENTS.filter(s => MOCK_NEEDS_DIET_REVIEW.includes(s.id) && s.status === 'ativo')
+  },
+
+  async markAsReviewed(userId: string): Promise<void> {
+    // TODO: Supabase — set diet_plans.verified_at = now() for this user
+    void userId
     await new Promise(r => setTimeout(r, 200))
   },
 }

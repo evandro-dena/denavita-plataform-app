@@ -1,9 +1,9 @@
 'use client'
 import { useQuery } from '@tanstack/react-query'
 import { dashboardService } from '@/lib/api/dashboard'
-import { studentService } from '@/lib/api/students'
+import { studentService, dietReviewService } from '@/lib/api/students'
 import Topbar from '@/components/layout/Topbar'
-import { Users, Clock, FileWarning, UserPlus } from 'lucide-react'
+import { Users, Clock, ClipboardCheck, ChevronRight } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { Skeleton } from '@/components/ui/skeleton'
 import Link from 'next/link'
@@ -38,7 +38,14 @@ export default function DashboardPage() {
     queryFn: () => studentService.list(NUTRI_ID),
   })
 
-  const expiring = students?.filter(s => s.subscription?.status === 'vencendo' || s.subscription?.status === 'vencido') ?? []
+  const { data: needsDietReview = [] } = useQuery({
+    queryKey: ['needs-diet-review', NUTRI_ID],
+    queryFn: () => dietReviewService.getNeedingReview(NUTRI_ID),
+  })
+
+  const expiring = students?.filter(
+    s => s.subscription?.status === 'vencendo' || s.subscription?.status === 'vencido'
+  ) ?? []
 
   return (
     <div>
@@ -47,42 +54,68 @@ export default function DashboardPage() {
       {/* Stats Grid */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
         {isLoading ? (
-          Array(4).fill(0).map((_, i) => <Skeleton key={i} className="h-28 rounded-2xl" style={{ background: '#1A1A1A' }} />)
+          Array(4).fill(0).map((_, i) => (
+            <Skeleton key={i} className="h-28 rounded-2xl" style={{ background: '#1A1A1A' }} />
+          ))
         ) : (
           <>
             <StatCard label="Alunos ativos" value={stats?.active_students ?? 0} icon={Users} accent />
             <StatCard label="Vencendo em 7d" value={stats?.expiring_7d ?? 0} icon={Clock} warning />
             <StatCard label="Vencendo em 15d" value={stats?.expiring_15d ?? 0} icon={Clock} />
-            <StatCard label="Exames pendentes" value={stats?.pending_exams ?? 0} icon={FileWarning} warning />
+            <StatCard
+              label="Verificar dieta"
+              value={needsDietReview.length}
+              icon={ClipboardCheck}
+              warning={needsDietReview.length > 0}
+            />
           </>
         )}
       </div>
 
-      {/* Two columns */}
+      {/* Two panels */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Expiring subscriptions */}
+
+        {/* Planos vencendo */}
         <div className="rounded-2xl border p-6" style={{ background: '#1A1A1A', borderColor: '#2A2A2A' }}>
-          <h2 className="font-semibold text-base mb-4" style={{ fontFamily: 'Poppins, sans-serif', color: '#FFFFFF' }}>Planos vencendo</h2>
+          <h2 className="font-semibold text-base mb-4" style={{ fontFamily: 'Poppins, sans-serif', color: '#FFFFFF' }}>
+            Planos vencendo
+          </h2>
           {expiring.length === 0 ? (
             <p className="text-sm" style={{ color: '#555555' }}>Nenhum plano vencendo em breve.</p>
           ) : (
-            <div className="flex flex-col gap-3">
+            <div className="flex flex-col gap-2">
               {expiring.map(s => (
                 <Link key={s.id} href={`/alunos/${s.id}`}>
-                  <div className="flex items-center justify-between p-3 rounded-xl hover:bg-white/5 transition-all" style={{ background: '#222222' }}>
-                    <div>
-                      <p className="text-sm font-medium" style={{ color: '#FFFFFF' }}>{s.name}</p>
-                      <p className="text-xs mt-0.5" style={{ color: '#888888' }}>
-                        Expira em: {s.subscription?.expires_at ? new Date(s.subscription.expires_at).toLocaleDateString('pt-BR') : '-'}
-                      </p>
+                  <div
+                    className="flex items-center justify-between p-3 rounded-xl hover:bg-white/5 transition-all cursor-pointer"
+                    style={{ background: '#222222' }}
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold flex-shrink-0"
+                        style={{ background: '#C8FF00', color: '#111111' }}>
+                        {s.name.charAt(0)}
+                      </div>
+                      <div>
+                        <p className="text-sm font-medium" style={{ color: '#FFFFFF' }}>{s.name}</p>
+                        <p className="text-xs mt-0.5" style={{ color: '#888888' }}>
+                          Expira em: {s.subscription?.expires_at
+                            ? new Date(s.subscription.expires_at).toLocaleDateString('pt-BR')
+                            : '-'}
+                        </p>
+                      </div>
                     </div>
-                    <Badge style={{
-                      background: s.subscription?.status === 'vencido' ? 'rgba(239,68,68,0.15)' : 'rgba(245,158,11,0.15)',
-                      color: s.subscription?.status === 'vencido' ? '#EF4444' : '#F59E0B',
-                      border: 'none', borderRadius: '9999px'
-                    }}>
-                      {s.subscription?.status === 'vencido' ? 'Vencido' : 'Vencendo'}
-                    </Badge>
+                    <div className="flex items-center gap-2">
+                      <Badge style={{
+                        background: s.subscription?.status === 'vencido'
+                          ? 'rgba(239,68,68,0.15)'
+                          : 'rgba(245,158,11,0.15)',
+                        color: s.subscription?.status === 'vencido' ? '#EF4444' : '#F59E0B',
+                        border: 'none', borderRadius: '9999px', fontSize: '11px'
+                      }}>
+                        {s.subscription?.status === 'vencido' ? 'Vencido' : 'Vencendo'}
+                      </Badge>
+                      <ChevronRight size={14} style={{ color: '#555555' }} />
+                    </div>
                   </div>
                 </Link>
               ))}
@@ -90,27 +123,53 @@ export default function DashboardPage() {
           )}
         </div>
 
-        {/* Lista de espera */}
+        {/* Alunos que faltam analisar a dieta */}
         <div className="rounded-2xl border p-6" style={{ background: '#1A1A1A', borderColor: '#2A2A2A' }}>
-          <h2 className="font-semibold text-base mb-4" style={{ fontFamily: 'Poppins, sans-serif', color: '#FFFFFF' }}>Lista de espera</h2>
-          {students?.filter(s => s.status === 'espera').length === 0 ? (
-            <p className="text-sm" style={{ color: '#555555' }}>Nenhum aluno na lista de espera.</p>
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="font-semibold text-base" style={{ fontFamily: 'Poppins, sans-serif', color: '#FFFFFF' }}>
+              Alunos que faltam analisar a dieta
+            </h2>
+            {needsDietReview.length > 0 && (
+              <span className="text-xs px-2 py-0.5 rounded-full font-medium"
+                style={{ background: 'rgba(245,158,11,0.15)', color: '#F59E0B' }}>
+                {needsDietReview.length} pendente{needsDietReview.length > 1 ? 's' : ''}
+              </span>
+            )}
+          </div>
+          <p className="text-xs mb-4" style={{ color: '#555555' }}>
+            Alunos que preencheram a anamnese no app e aguardam revisão da dieta gerada pela IA.
+          </p>
+          {needsDietReview.length === 0 ? (
+            <p className="text-sm" style={{ color: '#555555' }}>Tudo em dia! Nenhuma dieta pendente.</p>
           ) : (
-            <div className="flex flex-col gap-3">
-              {students?.filter(s => s.status === 'espera').map(s => (
+            <div className="flex flex-col gap-2">
+              {needsDietReview.map(s => (
                 <Link key={s.id} href={`/alunos/${s.id}`}>
-                  <div className="flex items-center justify-between p-3 rounded-xl hover:bg-white/5 transition-all" style={{ background: '#222222' }}>
-                    <div>
-                      <p className="text-sm font-medium" style={{ color: '#FFFFFF' }}>{s.name}</p>
-                      <p className="text-xs mt-0.5" style={{ color: '#888888' }}>{s.goal_label}</p>
+                  <div
+                    className="flex items-center justify-between p-3 rounded-xl hover:bg-white/5 transition-all cursor-pointer"
+                    style={{ background: '#222222' }}
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold flex-shrink-0"
+                        style={{ background: 'rgba(245,158,11,0.15)', color: '#F59E0B' }}>
+                        {s.name.charAt(0)}
+                      </div>
+                      <div>
+                        <p className="text-sm font-medium" style={{ color: '#FFFFFF' }}>{s.name}</p>
+                        <p className="text-xs mt-0.5" style={{ color: '#888888' }}>{s.goal_label}</p>
+                      </div>
                     </div>
-                    <UserPlus size={16} style={{ color: '#C8FF00' }} />
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs" style={{ color: '#F59E0B' }}>Verificar dieta</span>
+                      <ChevronRight size={14} style={{ color: '#555555' }} />
+                    </div>
                   </div>
                 </Link>
               ))}
             </div>
           )}
         </div>
+
       </div>
     </div>
   )

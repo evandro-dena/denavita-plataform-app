@@ -40,16 +40,40 @@ export const MOCK_ANAMNESIS: Record<string, Anamnesis> = {
     horarios: { acordar: '07:00', treino: '18:00', refeicoes: [{ nome: 'Café da manhã', horario: '08:00' }, { nome: 'Almoço', horario: '12:30' }, { nome: 'Jantar', horario: '20:00' }] },
     refeicoes: ['cafe_manha', 'almoco', 'lanche_tarde', 'jantar'],
     come_no_trabalho: true, condicao_suplemento: 'sim_limitado',
-    suplementos_atuais: ['whey', 'creatina'],
-    alergias: ['lactose'],
-    doenca_cronica: { tem: false },
-    medicamento: { usa: false },
-    historico_lesao: { tem: false },
+    suplementos_atuais: ['whey', 'creatina'], alergias: ['lactose'],
+    doenca_cronica: { tem: false }, medicamento: { usa: false }, historico_lesao: { tem: false },
     periodo_fome: 'noite', preferencia_alimentar: 'salgados',
     alimentacao_atual: 'Gosto de frango, arroz e salada. Café da manhã como pão com ovos.',
     created_at: '2024-01-10T10:00:00Z'
-  }
+  },
+  '2': {
+    id: 'a2', user_id: '2', sexo: 'masculino', idade: 32, peso: 78, altura: 178,
+    objetivo: 'ganhar_massa', tempo_treino: '1_3a', frequencia_treino: '5x',
+    horarios: { acordar: '06:00', treino: '07:00', refeicoes: [{ nome: 'Café da manhã', horario: '06:30' }, { nome: 'Almoço', horario: '12:00' }, { nome: 'Pós-treino', horario: '08:30' }, { nome: 'Jantar', horario: '19:00' }] },
+    refeicoes: ['cafe_manha', 'almoco', 'pos_treino', 'jantar', 'ceia'],
+    come_no_trabalho: false, condicao_suplemento: 'sim_livre',
+    suplementos_atuais: ['whey', 'creatina', 'pre_treino'], alergias: [],
+    doenca_cronica: { tem: false }, medicamento: { usa: false }, historico_lesao: { tem: true, quais: 'Joelho direito — menisco' },
+    periodo_fome: 'manha', preferencia_alimentar: 'salgados',
+    alimentacao_atual: 'Como muito frango e arroz. Café da manhã com ovos e aveia. Uso whey pós-treino.',
+    created_at: '2024-02-05T10:00:00Z'
+  },
+  '3': {
+    id: 'a3', user_id: '3', sexo: 'feminino', idade: 26, peso: 65, altura: 162,
+    objetivo: 'saude', tempo_treino: 'menos_6m', frequencia_treino: '3x',
+    horarios: { acordar: '08:00', treino: '19:00', refeicoes: [{ nome: 'Café da manhã', horario: '08:30' }, { nome: 'Almoço', horario: '13:00' }, { nome: 'Jantar', horario: '20:00' }] },
+    refeicoes: ['cafe_manha', 'lanche_manha', 'almoco', 'jantar'],
+    come_no_trabalho: true, condicao_suplemento: 'nao',
+    suplementos_atuais: [], alergias: ['gluten'],
+    doenca_cronica: { tem: false }, medicamento: { usa: false }, historico_lesao: { tem: false },
+    periodo_fome: 'tarde', preferencia_alimentar: 'doces',
+    alimentacao_atual: 'Evito glúten. Como bastante frutas e legumes. Pouco proteína animal.',
+    created_at: '2024-03-20T10:00:00Z'
+  },
 }
+
+// Students who completed anamnesis but nutritionist hasn't verified the AI diet yet
+export const MOCK_NEEDS_DIET_REVIEW: string[] = ['2', '3']
 
 export const MOCK_WEIGHT_HISTORY: Record<string, WeightRecord[]> = {
   '1': [

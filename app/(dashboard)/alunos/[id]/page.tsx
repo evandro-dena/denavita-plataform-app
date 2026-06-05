@@ -8,7 +8,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Skeleton } from '@/components/ui/skeleton'
-import { ArrowLeft, Download, CheckCircle, Clock, Sparkles } from 'lucide-react'
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet'
+import { Textarea } from '@/components/ui/textarea'
+import { ArrowLeft, Download, CheckCircle, Clock, Sparkles, Bell, MessageCircle, Send } from 'lucide-react'
 import Link from 'next/link'
 import { toast } from 'sonner'
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts'
@@ -249,6 +251,9 @@ export default function StudentProfilePage({ params }: { params: Promise<{ id: s
     onSuccess: () => { qc.invalidateQueries({ queryKey: ['diet', id] }); toast.success('Plano salvo!') }
   })
 
+  const [notifyOpen, setNotifyOpen] = useState(false)
+  const [whatsappMsg, setWhatsappMsg] = useState('')
+
   if (isLoading) return <div className="p-8"><Skeleton className="h-12 w-64 mb-4" style={{ background: '#1A1A1A' }} /></div>
   if (!student) return <div className="p-8" style={{ color: '#888888' }}>Aluno não encontrado.</div>
 
@@ -257,11 +262,133 @@ export default function StudentProfilePage({ params }: { params: Promise<{ id: s
     peso: w.weight
   }))
 
-  // Fetch anamnesis for display in tab
   const anamnesisData = anamnesis
+
+  const isExpiring =
+    student.subscription?.status === 'vencendo' || student.subscription?.status === 'vencido'
+
+  const expiresDate = student.subscription?.expires_at
+    ? new Date(student.subscription.expires_at).toLocaleDateString('pt-BR')
+    : ''
+
+  const defaultWhatsappMsg =
+    `Olá ${student.name}! 👋\n\nPassando para avisar que o seu plano DenaVita ${student.subscription?.status === 'vencido' ? 'venceu' : `vence em ${expiresDate}`}.\n\nRenove agora para continuar tendo acesso ao seu plano alimentar personalizado e suporte contínuo. 💪\n\nQualquer dúvida, estou à disposição!`
+
+  const openNotify = () => {
+    setWhatsappMsg(defaultWhatsappMsg)
+    setNotifyOpen(true)
+  }
+
+  const sendWhatsapp = () => {
+    // TODO: conectar API WhatsApp (Twilio, Z-API, Evolution API, etc.)
+    const phone = student.phone?.replace(/\D/g, '') ?? ''
+    const encoded = encodeURIComponent(whatsappMsg)
+    if (phone) {
+      window.open(`https://wa.me/55${phone}?text=${encoded}`, '_blank')
+    } else {
+      toast.error('Telefone do aluno não cadastrado')
+    }
+    toast.success('WhatsApp aberto!')
+    setNotifyOpen(false)
+  }
+
+  const sendAppNotification = () => {
+    // TODO: conectar API de push notifications do app (Expo Push / FCM)
+    toast.success('Notificação enviada ao app! (mock)')
+    setNotifyOpen(false)
+  }
 
   return (
     <div>
+
+      {/* Sheet — Avisar vencimento */}
+      <Sheet open={notifyOpen} onOpenChange={setNotifyOpen}>
+        <SheetContent
+          side="right"
+          className="w-full max-w-md border-l"
+          style={{ background: '#1A1A1A', borderColor: '#2A2A2A' }}
+        >
+          <SheetHeader className="mb-6">
+            <SheetTitle style={{ fontFamily: 'Poppins, sans-serif', color: '#FFFFFF', fontSize: '18px' }}>
+              Avisar vencimento
+            </SheetTitle>
+            <p className="text-sm" style={{ color: '#888888' }}>
+              Escolha como notificar <strong style={{ color: '#FFFFFF' }}>{student.name}</strong> sobre o vencimento do plano.
+            </p>
+          </SheetHeader>
+
+          {/* Status badge */}
+          <div className="flex items-center gap-2 mb-5 p-3 rounded-xl" style={{ background: '#222222' }}>
+            <Clock size={15} style={{ color: student.subscription?.status === 'vencido' ? '#EF4444' : '#F59E0B' }} />
+            <span className="text-sm" style={{ color: '#888888' }}>
+              Plano{' '}
+              <span style={{ color: student.subscription?.status === 'vencido' ? '#EF4444' : '#F59E0B', fontWeight: 600 }}>
+                {student.subscription?.status === 'vencido' ? 'vencido' : `vence em ${expiresDate}`}
+              </span>
+            </span>
+          </div>
+
+          {/* WhatsApp section */}
+          <div className="mb-6">
+            <div className="flex items-center gap-2 mb-2">
+              <MessageCircle size={15} style={{ color: '#25D366' }} />
+              <span className="text-sm font-medium" style={{ color: '#FFFFFF' }}>Mensagem WhatsApp</span>
+            </div>
+            <Textarea
+              value={whatsappMsg}
+              onChange={e => setWhatsappMsg(e.target.value)}
+              rows={8}
+              className="resize-none border text-sm leading-relaxed"
+              style={{ background: '#111111', color: '#FFFFFF', borderColor: '#2A2A2A', borderRadius: '12px' }}
+            />
+            <p className="text-xs mt-1.5" style={{ color: '#555555' }}>
+              {student.phone
+                ? `Será aberto o WhatsApp Web para: ${student.phone}`
+                : 'Telefone não cadastrado — adicione em Cadastro'}
+            </p>
+            <Button
+              onClick={sendWhatsapp}
+              className="w-full mt-3 font-semibold"
+              style={{ background: '#25D366', color: '#FFFFFF', borderRadius: '12px', fontFamily: 'Poppins, sans-serif' }}
+            >
+              <Send size={15} className="mr-2" />
+              Enviar WhatsApp
+            </Button>
+          </div>
+
+          <div className="flex items-center gap-3 my-4">
+            <div className="flex-1 h-px" style={{ background: '#2A2A2A' }} />
+            <span className="text-xs" style={{ color: '#555555' }}>ou</span>
+            <div className="flex-1 h-px" style={{ background: '#2A2A2A' }} />
+          </div>
+
+          {/* App notification section */}
+          <div>
+            <div className="flex items-center gap-2 mb-2">
+              <Bell size={15} style={{ color: '#C8FF00' }} />
+              <span className="text-sm font-medium" style={{ color: '#FFFFFF' }}>Notificação no app</span>
+            </div>
+            <div className="p-3 rounded-xl mb-3" style={{ background: '#222222' }}>
+              <p className="text-xs" style={{ color: '#888888' }}>
+                Envia uma notificação push diretamente ao celular do aluno pelo app DenaVita.
+              </p>
+              <p className="text-xs mt-1" style={{ color: '#555555' }}>
+                // TODO: conectar API de push notifications (Expo / FCM)
+              </p>
+            </div>
+            <Button
+              onClick={sendAppNotification}
+              variant="outline"
+              className="w-full font-semibold"
+              style={{ borderColor: '#C8FF00', color: '#C8FF00', background: 'rgba(200,255,0,0.05)', borderRadius: '12px', fontFamily: 'Poppins, sans-serif' }}
+            >
+              <Bell size={15} className="mr-2" />
+              Enviar notificação no app
+            </Button>
+          </div>
+        </SheetContent>
+      </Sheet>
+
       <div className="flex items-center gap-3 mb-6">
         <Link href="/alunos">
           <button className="p-2 rounded-xl hover:bg-white/10 transition-all">
@@ -278,13 +405,33 @@ export default function StudentProfilePage({ params }: { params: Promise<{ id: s
             <p className="text-sm" style={{ color: '#888888' }}>{student.email} · {student.goal_label}</p>
           </div>
         </div>
-        <Badge style={{
-          background: student.status === 'ativo' ? 'rgba(200,255,0,0.12)' : 'rgba(136,136,136,0.12)',
-          color: student.status === 'ativo' ? '#C8FF00' : '#888888',
-          border: 'none', borderRadius: '9999px'
-        }}>
-          {student.status === 'ativo' ? 'Ativo' : student.status}
-        </Badge>
+        <div className="flex items-center gap-3">
+          {isExpiring && (
+            <Button
+              onClick={openNotify}
+              size="sm"
+              style={{
+                background: 'rgba(245,158,11,0.12)',
+                color: '#F59E0B',
+                border: '1px solid rgba(245,158,11,0.3)',
+                borderRadius: '10px',
+                fontFamily: 'Poppins, sans-serif',
+                fontWeight: 600,
+                fontSize: '13px',
+              }}
+            >
+              <Bell size={14} className="mr-1.5" />
+              Avisar vencimento
+            </Button>
+          )}
+          <Badge style={{
+            background: student.status === 'ativo' ? 'rgba(200,255,0,0.12)' : 'rgba(136,136,136,0.12)',
+            color: student.status === 'ativo' ? '#C8FF00' : '#888888',
+            border: 'none', borderRadius: '9999px'
+          }}>
+            {student.status === 'ativo' ? 'Ativo' : student.status}
+          </Badge>
+        </div>
       </div>
 
       <Tabs defaultValue="cadastro">
