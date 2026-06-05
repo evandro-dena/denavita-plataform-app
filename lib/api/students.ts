@@ -25,7 +25,7 @@ export const studentService = {
   async create(data: Partial<Student>): Promise<Student> {
     await new Promise(r => setTimeout(r, 500))
     const newStudent: Student = {
-      id: String(Date.now()), role: 'aluno', status: 'espera',
+      id: String(Date.now()), role: 'aluno', status: 'ativo',
       created_at: new Date().toISOString(), ...data
     } as Student
     MOCK_STUDENTS.unshift(newStudent)
