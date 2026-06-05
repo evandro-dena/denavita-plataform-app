@@ -993,15 +993,15 @@ export default function AlunosPage() {
                         <td className="px-4 py-3">
                           <div className="flex items-center gap-2 justify-end">
                             {tab === 'espera' && (
-                              <Button
-                                size="sm"
-                                disabled={releaseStudent.isPending}
-                                onClick={() => openPanel(s, 'nutricao')}
-                                variant="outline"
-                                style={{ borderColor: 'rgba(200,255,0,0.4)', color: '#C8FF00', background: 'rgba(200,255,0,0.06)', borderRadius: '10px', fontSize: '12px', height: '30px', padding: '0 10px' }}
-                              >
-                                Ver dieta
-                              </Button>
+                              <Link href={`/alunos/${s.id}?tab=prescricao`}>
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  style={{ borderColor: 'rgba(200,255,0,0.4)', color: '#C8FF00', background: 'rgba(200,255,0,0.06)', borderRadius: '10px', fontSize: '12px', height: '30px', padding: '0 10px' }}
+                                >
+                                  Ver dieta
+                                </Button>
+                              </Link>
                             )}
                             {tab === 'espera' && hasDiet && (
                               <Button
