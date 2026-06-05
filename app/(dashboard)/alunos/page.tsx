@@ -323,11 +323,15 @@ function NutricaoPanel({ student }: { student: Student }) {
                   borderColor: isActive ? 'rgba(200,255,0,0.4)' : '#3D3D3D',
                 }}
               >
-                {/* Name + badge */}
-                <div className="flex items-start justify-between gap-2 mb-3">
-                  <p className="text-sm font-semibold leading-tight" style={{ color: '#FFFFFF', fontFamily: 'Poppins, sans-serif' }}>
-                    {plan.name}
-                  </p>
+                {/* Name + badge + edit link */}
+                <div className="flex items-start justify-between gap-2 mb-2">
+                  <Link href={`/prescricoes/${plan.id}`}
+                    className="group flex items-center gap-1.5 flex-1 min-w-0 hover:opacity-80 transition-opacity">
+                    <p className="text-sm font-semibold leading-tight truncate" style={{ color: '#FFFFFF', fontFamily: 'Poppins, sans-serif' }}>
+                      {plan.name}
+                    </p>
+                    <Pencil size={11} className="flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity" style={{ color: '#C8FF00' }} />
+                  </Link>
                   <Badge style={{
                     background: plan.source === 'ia' ? 'rgba(200,255,0,0.12)' : 'rgba(136,136,136,0.1)',
                     color: plan.source === 'ia' ? '#C8FF00' : '#888888',
@@ -345,14 +349,19 @@ function NutricaoPanel({ student }: { student: Student }) {
                   <span>G {plan.total_fat}g</span>
                 </div>
 
-                {/* Toggle */}
+                {/* Toggle + edit button */}
                 <div className="flex items-center justify-between">
-                  <span
-                    className="text-sm font-semibold"
-                    style={{ color: isActive ? '#C8FF00' : '#555555' }}
-                  >
-                    {isActive ? 'Selecionado' : 'Oculto'}
-                  </span>
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm font-semibold" style={{ color: isActive ? '#C8FF00' : '#555555' }}>
+                      {isActive ? 'Selecionado' : 'Oculto'}
+                    </span>
+                    <Link href={`/prescricoes/${plan.id}`}>
+                      <button className="flex items-center gap-1 px-2 py-1 rounded-lg text-xs transition-all hover:bg-white/10"
+                        style={{ color: '#888888' }}>
+                        <Pencil size={10} /> Ajustar
+                      </button>
+                    </Link>
+                  </div>
                   <Switch
                     checked={isActive}
                     onCheckedChange={() => handleToggle(plan.id, isActive)}
