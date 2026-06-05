@@ -57,7 +57,9 @@ export const dietReviewService = {
   async getNeedingReview(nutritionistId: string): Promise<Student[]> {
     void nutritionistId
     await new Promise(r => setTimeout(r, 300))
-    return MOCK_STUDENTS.filter(s => MOCK_NEEDS_DIET_REVIEW.includes(s.id) && s.status === 'ativo')
+    // Retorna alunos que têm plano pendente de revisão (status 'espera' com dieta da IA)
+    const pendingIds = Object.keys(MOCK_PENDING_REVIEW_PLANS)
+    return MOCK_STUDENTS.filter(s => pendingIds.includes(s.id))
   },
 
   async markAsReviewed(userId: string): Promise<void> {

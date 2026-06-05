@@ -354,6 +354,11 @@ export default function DashboardPage() {
     queryFn: () => dietReviewService.getNeedingReview(NUTRI_ID),
   })
 
+  const { data: pendingPlanMap = {} } = useQuery({
+    queryKey: ['pending-plan-map'],
+    queryFn: () => dietReviewService.getPendingPlanMap(),
+  })
+
   const expiring = students?.filter(
     s => s.subscription?.status === 'vencendo' || s.subscription?.status === 'vencido'
   ) ?? []
@@ -454,29 +459,32 @@ export default function DashboardPage() {
             <p className="text-sm" style={{ color: '#555555' }}>Tudo em dia! Nenhuma dieta pendente.</p>
           ) : (
             <div className="flex flex-col gap-2">
-              {needsDietReview.map(s => (
-                <button
-                  key={s.id}
-                  onClick={() => setSelected({ student: s, context: 'dieta' })}
-                  className="flex items-center justify-between p-3 rounded-xl hover:bg-white/5 transition-all w-full text-left"
-                  style={{ background: '#2F2F2F' }}
-                >
-                  <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold flex-shrink-0"
-                      style={{ background: 'rgba(245,158,11,0.15)', color: '#F59E0B' }}>
-                      {s.name.charAt(0)}
+              {needsDietReview.map(s => {
+                const planId = pendingPlanMap[s.id]
+                const card = (
+                  <div className="flex items-center justify-between p-3 rounded-xl hover:bg-white/5 transition-all w-full text-left cursor-pointer"
+                    style={{ background: '#2F2F2F' }}>
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold flex-shrink-0"
+                        style={{ background: 'rgba(245,158,11,0.15)', color: '#F59E0B' }}>
+                        {s.name.charAt(0)}
+                      </div>
+                      <div>
+                        <p className="text-sm font-medium" style={{ color: '#FFFFFF' }}>{s.name}</p>
+                        <p className="text-xs mt-0.5" style={{ color: '#888888' }}>{s.goal_label}</p>
+                      </div>
                     </div>
-                    <div>
-                      <p className="text-sm font-medium" style={{ color: '#FFFFFF' }}>{s.name}</p>
-                      <p className="text-xs mt-0.5" style={{ color: '#888888' }}>{s.goal_label}</p>
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs font-semibold" style={{ color: '#C8FF00' }}>Ver dieta</span>
+                      <ChevronRight size={14} style={{ color: '#555555' }} />
                     </div>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs" style={{ color: '#F59E0B' }}>Verificar</span>
-                    <ChevronRight size={14} style={{ color: '#555555' }} />
-                  </div>
-                </button>
-              ))}
+                )
+                return planId
+                  ? <Link key={s.id} href={`/prescricoes/${planId}`}>{card}</Link>
+                  : <button key={s.id} onClick={() => setSelected({ student: s, context: 'dieta' })}
+                      className="w-full text-left">{card}</button>
+              })}
             </div>
           )}
         </div>
