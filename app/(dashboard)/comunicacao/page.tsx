@@ -107,17 +107,25 @@ function CampaignEditor({ campaign, onClose, onSaved }: {
 
   const sendNow = useMutation<void, Error, void>({
     mutationFn: async () => {
+      const isScheduled = form.schedule_type !== 'imediato'
+      const dataToSave = isScheduled ? { ...form, status: 'agendado' as const } : form
       let id: string
       if (isNew) {
-        const saved = await campaignService.create(form)
+        const saved = await campaignService.create(dataToSave)
         id = saved.id
       } else {
-        await campaignService.update(campaign!.id, form)
+        await campaignService.update(campaign!.id, dataToSave)
         id = campaign!.id
       }
-      await campaignService.send(id)
+      // Só envia de fato quando for imediato
+      if (!isScheduled) await campaignService.send(id)
     },
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ['campaigns'] }); toast.success('Campanha enviada!'); onSaved() },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['campaigns'] })
+      const isScheduled = form.schedule_type !== 'imediato'
+      toast.success(isScheduled ? 'Campanha agendada!' : 'Campanha enviada!')
+      onSaved()
+    },
   })
 
   const set = (k: keyof Campaign) => (v: unknown) => setForm(p => ({ ...p, [k]: v }))
