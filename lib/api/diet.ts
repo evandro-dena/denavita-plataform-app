@@ -42,7 +42,7 @@ export const mealPlanService = {
     const base = { ...MOCK_DIET_PLAN, ...plan, id: plan.id ?? String(Date.now()), updated_at: new Date().toISOString() }
     const idx = MOCK_DIET_PLANS.findIndex(p => p.id === base.id)
     if (idx >= 0) MOCK_DIET_PLANS[idx] = base
-    else MOCK_DIET_PLANS.push(base)
+    else MOCK_DIET_PLANS.unshift(base)
     return base
   },
 }
