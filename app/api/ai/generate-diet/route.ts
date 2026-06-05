@@ -1,29 +1,34 @@
 import { NextRequest, NextResponse } from 'next/server'
-import Anthropic from '@anthropic-ai/sdk'
+import { GoogleGenAI } from '@google/genai'
 
-const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
+// Equivalente ao Python:
+// from google import genai
+// client = genai.Client()
+const client = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY })
 
 export async function POST(req: NextRequest) {
   try {
     const { prompt } = await req.json()
 
-    const message = await client.messages.create({
-      model: 'claude-sonnet-4-20250514',
-      max_tokens: 4096,
-      messages: [{ role: 'user', content: prompt }],
+    // Equivalente ao Python:
+    // response = client.models.generate_content(model="gemini-3.5-flash", contents="...")
+    const response = await client.models.generateContent({
+      model: 'gemini-2.5-flash',
+      contents: prompt,
     })
 
-    const text = message.content[0].type === 'text' ? message.content[0].text : ''
+    // Equivalente ao Python: response.text
+    const text = response.text ?? ''
 
-    // Parse seguro
+    // Extrai o JSON da resposta
     const jsonMatch = text.match(/\{[\s\S]*\}/)
-    if (!jsonMatch) throw new Error('IA não retornou JSON válido')
+    if (!jsonMatch) throw new Error('Gemini não retornou JSON válido')
 
     const plan = JSON.parse(jsonMatch[0])
-
     return NextResponse.json({ plan })
+
   } catch (err) {
-    console.error('AI generate diet error:', err)
-    return NextResponse.json({ error: 'Erro ao gerar plano' }, { status: 500 })
+    console.error('[Gemini] Erro ao gerar plano:', err)
+    return NextResponse.json({ error: 'Erro ao gerar plano com IA' }, { status: 500 })
   }
 }
