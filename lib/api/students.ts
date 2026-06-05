@@ -73,13 +73,20 @@ export const anamnesisService = {
 
 export const assessmentService = {
   async list(userId: string): Promise<Assessment[]> {
-    // TODO: conectar Supabase
     await new Promise(r => setTimeout(r, 300))
     return MOCK_ASSESSMENTS[userId] ?? []
   },
 
+  async add(userId: string, data: Omit<Assessment, 'id' | 'user_id' | 'bmi'>): Promise<Assessment> {
+    await new Promise(r => setTimeout(r, 400))
+    const bmi = data.height > 0 ? Number((data.weight / ((data.height / 100) ** 2)).toFixed(1)) : 0
+    const record: Assessment = { ...data, id: String(Date.now()), user_id: userId, bmi }
+    if (!MOCK_ASSESSMENTS[userId]) MOCK_ASSESSMENTS[userId] = []
+    MOCK_ASSESSMENTS[userId].unshift(record)
+    return record
+  },
+
   async create(data: Omit<Assessment, 'id'>): Promise<Assessment> {
-    // TODO: conectar Supabase
     await new Promise(r => setTimeout(r, 400))
     return { ...data, id: String(Date.now()) }
   },
@@ -87,30 +94,35 @@ export const assessmentService = {
 
 export const examService = {
   async list(userId: string): Promise<Exam[]> {
-    // TODO: conectar Supabase
     await new Promise(r => setTimeout(r, 300))
     return MOCK_EXAMS[userId] ?? []
   },
 
+  async add(userId: string, data: { file_name: string; file_type: string; notes?: string }): Promise<Exam> {
+    await new Promise(r => setTimeout(r, 300))
+    const record: Exam = { id: String(Date.now()), user_id: userId, file_url: '#', file_name: data.file_name || 'arquivo', file_type: data.file_type, status: 'pendente', notes: data.notes, uploaded_at: new Date().toISOString() }
+    if (!MOCK_EXAMS[userId]) MOCK_EXAMS[userId] = []
+    MOCK_EXAMS[userId].unshift(record)
+    return record
+  },
+
   async updateStatus(examId: string, status: Exam['status'], notes?: string): Promise<void> {
-    // TODO: conectar Supabase
-    void examId
-    void status
-    void notes
+    void examId; void status; void notes
     await new Promise(r => setTimeout(r, 300))
   },
 }
 
 export const weightService = {
   async getHistory(userId: string): Promise<WeightRecord[]> {
-    // TODO: conectar Supabase
     await new Promise(r => setTimeout(r, 300))
     return MOCK_WEIGHT_HISTORY[userId] ?? []
   },
 
-  async add(record: Omit<WeightRecord, 'id'>): Promise<WeightRecord> {
-    // TODO: conectar Supabase
+  async add(userId: string, data: { weight: number; note?: string }): Promise<WeightRecord> {
     await new Promise(r => setTimeout(r, 200))
-    return { ...record, id: String(Date.now()) }
+    const record: WeightRecord = { id: String(Date.now()), user_id: userId, weight: data.weight, note: data.note, recorded_at: new Date().toISOString() }
+    if (!MOCK_WEIGHT_HISTORY[userId]) MOCK_WEIGHT_HISTORY[userId] = []
+    MOCK_WEIGHT_HISTORY[userId].unshift(record)
+    return record
   },
 }

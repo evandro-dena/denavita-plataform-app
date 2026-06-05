@@ -17,6 +17,7 @@ import {
   Search, Plus, MoreHorizontal, User, ClipboardList,
   UtensilsCrossed, Activity, FileText, TrendingUp, CreditCard,
   Trash2, X, CheckCircle, Clock, Sparkles, Download, ChevronRight,
+  Pencil, Save, XCircle,
 } from 'lucide-react'
 import Link from 'next/link'
 import { toast } from 'sonner'
@@ -52,12 +53,44 @@ function statusColor(status: Student['status']) {
   return                            { bg: 'rgba(239,68,68,0.12)',   color: '#EF4444' }
 }
 
+// ─── Shared styles ───────────────────────────────────────────────
+const iCls = 'w-full px-3 py-2.5 rounded-xl border text-sm outline-none focus:ring-1 focus:ring-[#C8FF00] transition-all'
+const iStyle = { background: '#111111', color: '#FFFFFF', borderColor: '#2A2A2A' }
+const lblCls = 'text-xs uppercase tracking-wide mb-1 block'
+
 // ─── Info Row ────────────────────────────────────────────────────
 function InfoRow({ label, value }: { label: string; value?: string | number | null }) {
   return (
     <div className="flex flex-col gap-0.5 py-2.5 border-b last:border-0" style={{ borderColor: '#2A2A2A' }}>
       <span className="text-xs uppercase tracking-wide" style={{ color: '#555555' }}>{label}</span>
       <span className="text-sm" style={{ color: value ? '#FFFFFF' : '#555555' }}>{value ?? '—'}</span>
+    </div>
+  )
+}
+
+// ─── Edit Action Bar ─────────────────────────────────────────────
+function EditBar({ isEditing, onEdit, onSave, onCancel, saving }: {
+  isEditing: boolean; onEdit: () => void; onSave: () => void; onCancel: () => void; saving?: boolean
+}) {
+  if (!isEditing) return (
+    <button onClick={onEdit}
+      className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium transition-all hover:bg-white/10"
+      style={{ color: '#888888', border: '1px solid #2A2A2A' }}>
+      <Pencil size={12} /> Editar
+    </button>
+  )
+  return (
+    <div className="flex items-center gap-2">
+      <button onClick={onCancel}
+        className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs transition-all hover:bg-white/10"
+        style={{ color: '#888888', border: '1px solid #2A2A2A' }}>
+        <XCircle size={12} /> Cancelar
+      </button>
+      <button onClick={onSave} disabled={saving}
+        className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold transition-all"
+        style={{ background: '#C8FF00', color: '#111111', fontFamily: 'Poppins, sans-serif' }}>
+        <Save size={12} /> {saving ? 'Salvando...' : 'Salvar'}
+      </button>
     </div>
   )
 }
@@ -95,16 +128,70 @@ function PanelHeader({ student, section, onClose }: {
 
 // ─── Cadastro Panel ───────────────────────────────────────────────
 function CadastroPanel({ student }: { student: Student }) {
+  const qc = useQueryClient()
+  const [editing, setEditing] = useState(false)
+  const [form, setForm] = useState({
+    name: student.name ?? '',
+    email: student.email ?? '',
+    phone: student.phone ?? '',
+    birth_date: student.birth_date ?? '',
+    goal_label: student.goal_label ?? '',
+    current_weight: String(student.current_weight ?? ''),
+    goal_weight: String(student.goal_weight ?? ''),
+  })
+
+  const save = useMutation({
+    mutationFn: () => studentService.update(student.id, {
+      ...form,
+      current_weight: form.current_weight ? Number(form.current_weight) : undefined,
+      goal_weight: form.goal_weight ? Number(form.goal_weight) : undefined,
+    }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['students'] })
+      toast.success('Cadastro atualizado!')
+      setEditing(false)
+    },
+  })
+
+  const f = (field: keyof typeof form) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) =>
+    setForm(prev => ({ ...prev, [field]: e.target.value }))
+
   return (
-    <div className="p-5 overflow-y-auto flex-1">
-      <InfoRow label="Nome" value={student.name} />
-      <InfoRow label="E-mail" value={student.email} />
-      <InfoRow label="Telefone" value={student.phone} />
-      <InfoRow label="Data de nascimento" value={student.birth_date ? new Date(student.birth_date).toLocaleDateString('pt-BR') : null} />
-      <InfoRow label="Objetivo" value={student.goal_label} />
-      <InfoRow label="Peso atual" value={student.current_weight ? `${student.current_weight} kg` : null} />
-      <InfoRow label="Peso meta" value={student.goal_weight ? `${student.goal_weight} kg` : null} />
-      <InfoRow label="Cadastrado em" value={new Date(student.created_at).toLocaleDateString('pt-BR')} />
+    <div className="p-5 overflow-y-auto flex-1 flex flex-col gap-4">
+      <div className="flex justify-end">
+        <EditBar isEditing={editing} onEdit={() => setEditing(true)}
+          onSave={() => save.mutate()} onCancel={() => setEditing(false)} saving={save.isPending} />
+      </div>
+
+      {!editing ? (
+        <div>
+          <InfoRow label="Nome" value={student.name} />
+          <InfoRow label="E-mail" value={student.email} />
+          <InfoRow label="Telefone" value={student.phone} />
+          <InfoRow label="Data de nascimento" value={student.birth_date ? new Date(student.birth_date).toLocaleDateString('pt-BR') : null} />
+          <InfoRow label="Objetivo" value={student.goal_label} />
+          <InfoRow label="Peso atual" value={student.current_weight ? `${student.current_weight} kg` : null} />
+          <InfoRow label="Peso meta" value={student.goal_weight ? `${student.goal_weight} kg` : null} />
+          <InfoRow label="Cadastrado em" value={new Date(student.created_at).toLocaleDateString('pt-BR')} />
+        </div>
+      ) : (
+        <div className="flex flex-col gap-3">
+          {([
+            ['name', 'Nome', 'text'],
+            ['email', 'E-mail', 'email'],
+            ['phone', 'Telefone', 'tel'],
+            ['birth_date', 'Data de nascimento', 'date'],
+            ['goal_label', 'Objetivo', 'text'],
+            ['current_weight', 'Peso atual (kg)', 'number'],
+            ['goal_weight', 'Peso meta (kg)', 'number'],
+          ] as [keyof typeof form, string, string][]).map(([field, label, type]) => (
+            <div key={field}>
+              <label className={lblCls} style={{ color: '#555555' }}>{label}</label>
+              <input type={type} value={form[field]} onChange={f(field)} className={iCls} style={iStyle} />
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   )
 }
@@ -118,14 +205,27 @@ function AnamnesePanel({ studentId }: { studentId: string }) {
 
   if (isLoading) return <div className="p-5"><Skeleton className="h-8 w-full mb-2" style={{ background: '#2A2A2A' }} /></div>
   if (!data) return (
-    <div className="p-5 text-center" style={{ color: '#555555' }}>
-      <ClipboardList size={32} className="mx-auto mb-2 opacity-30" />
+    <div className="p-5 text-center flex flex-col items-center gap-3" style={{ color: '#555555' }}>
+      <ClipboardList size={32} className="opacity-30" />
       <p className="text-sm">Anamnese ainda não preenchida pelo aluno.</p>
+      <Link href={`/alunos/${studentId}?tab=anamnese`}>
+        <Button size="sm" style={{ background: '#C8FF00', color: '#111111', borderRadius: '10px', fontFamily: 'Poppins, sans-serif' }}>
+          <Pencil size={13} className="mr-1.5" /> Preencher agora
+        </Button>
+      </Link>
     </div>
   )
 
   return (
-    <div className="p-5 overflow-y-auto flex-1">
+    <div className="p-5 overflow-y-auto flex-1 flex flex-col gap-3">
+      <div className="flex justify-end">
+        <Link href={`/alunos/${studentId}?tab=anamnese`}>
+          <button className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium transition-all hover:bg-white/10"
+            style={{ color: '#888888', border: '1px solid #2A2A2A' }}>
+            <Pencil size={12} /> Editar completo
+          </button>
+        </Link>
+      </div>
       <InfoRow label="Sexo" value={data.sexo} />
       <InfoRow label="Idade" value={`${data.idade} anos`} />
       <InfoRow label="Peso / Altura" value={`${data.peso} kg · ${data.altura} cm`} />
@@ -278,108 +378,166 @@ function NutricaoPanel({ student }: { student: Student }) {
 
 // ─── Avaliação Panel ──────────────────────────────────────────────
 function AvaliacaoPanel({ studentId }: { studentId: string }) {
+  const qc = useQueryClient()
+  const [adding, setAdding] = useState(false)
+  const [form, setForm] = useState({ date: '', type: 'bioimpedance', weight: '', height: '', body_fat_percentage: '', muscle_mass: '' })
+
   const { data: assessments = [], isLoading } = useQuery({
     queryKey: ['assessments', studentId],
     queryFn: () => assessmentService.list(studentId),
   })
 
-  if (isLoading) return <div className="p-5"><Skeleton className="h-8 w-full" style={{ background: '#2A2A2A' }} /></div>
-  if (!assessments.length) return (
-    <div className="p-5 text-center" style={{ color: '#555555' }}>
-      <Activity size={32} className="mx-auto mb-2 opacity-30" />
-      <p className="text-sm">Nenhuma avaliação registrada.</p>
-    </div>
-  )
+  const save = useMutation({
+    mutationFn: () => assessmentService.add(studentId, {
+      type: form.type as 'bioimpedance' | 'pollock',
+      date: form.date || new Date().toISOString().split('T')[0],
+      weight: Number(form.weight), height: Number(form.height),
+      body_fat_percentage: form.body_fat_percentage ? Number(form.body_fat_percentage) : undefined,
+      muscle_mass: form.muscle_mass ? Number(form.muscle_mass) : undefined,
+    }),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['assessments', studentId] }); toast.success('Avaliação registrada!'); setAdding(false) },
+  })
 
-  const last = assessments[0]
+  const f = (k: keyof typeof form) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) =>
+    setForm(p => ({ ...p, [k]: e.target.value }))
+
   return (
     <div className="p-5 overflow-y-auto flex-1 flex flex-col gap-4">
-      {assessments.map(a => (
-        <div key={a.id} className="rounded-2xl border p-4" style={{ background: '#222222', borderColor: '#2A2A2A' }}>
-          <p className="text-xs mb-3" style={{ color: '#555555' }}>
-            {new Date(a.date).toLocaleDateString('pt-BR')} — {a.type === 'bioimpedance' ? 'Bioimpedância' : 'Dobras Pollock'}
-          </p>
-          <div className="grid grid-cols-2 gap-2">
-            {[
-              ['Peso', `${a.weight} kg`],
-              ['IMC', a.bmi.toFixed(1)],
-              ['% Gordura', a.body_fat_percentage ? `${a.body_fat_percentage}%` : '-'],
-              ['Massa muscular', a.muscle_mass ? `${a.muscle_mass} kg` : '-'],
-            ].map(([label, val]) => (
-              <div key={label} className="rounded-xl p-3" style={{ background: '#1A1A1A' }}>
-                <p className="text-xs" style={{ color: '#555555' }}>{label}</p>
-                <p className="text-base font-bold mt-0.5" style={{ color: '#C8FF00', fontFamily: 'Poppins, sans-serif' }}>{val}</p>
-              </div>
-            ))}
+      <div className="flex justify-end">
+        <EditBar isEditing={adding} onEdit={() => setAdding(true)}
+          onSave={() => save.mutate()} onCancel={() => setAdding(false)}
+          saving={save.isPending} />
+      </div>
+
+      {adding && (
+        <div className="rounded-2xl border p-4 flex flex-col gap-3" style={{ background: '#222222', borderColor: 'rgba(200,255,0,0.3)' }}>
+          <p className="text-xs font-semibold" style={{ color: '#C8FF00', fontFamily: 'Poppins, sans-serif' }}>Nova avaliação</p>
+          <div className="grid grid-cols-2 gap-3">
+            <div><label className={lblCls} style={{ color: '#555555' }}>Data</label><input type="date" value={form.date} onChange={f('date')} className={iCls} style={iStyle} /></div>
+            <div>
+              <label className={lblCls} style={{ color: '#555555' }}>Tipo</label>
+              <select value={form.type} onChange={f('type')} className={iCls} style={iStyle}>
+                <option value="bioimpedance">Bioimpedância</option>
+                <option value="pollock">Dobras Pollock</option>
+              </select>
+            </div>
+            <div><label className={lblCls} style={{ color: '#555555' }}>Peso (kg)</label><input type="number" value={form.weight} onChange={f('weight')} className={iCls} style={iStyle} /></div>
+            <div><label className={lblCls} style={{ color: '#555555' }}>Altura (cm)</label><input type="number" value={form.height} onChange={f('height')} className={iCls} style={iStyle} /></div>
+            <div><label className={lblCls} style={{ color: '#555555' }}>% Gordura</label><input type="number" value={form.body_fat_percentage} onChange={f('body_fat_percentage')} className={iCls} style={iStyle} /></div>
+            <div><label className={lblCls} style={{ color: '#555555' }}>Massa muscular (kg)</label><input type="number" value={form.muscle_mass} onChange={f('muscle_mass')} className={iCls} style={iStyle} /></div>
           </div>
         </div>
-      ))}
-      <div className="text-xs text-center" style={{ color: '#555555' }}>
-        {assessments.length > 1 ? `${assessments.length} avaliações no total` : ''}
-      </div>
-      <div className="flex-1" />
-      {last && (
-        <p className="text-xs" style={{ color: '#555555' }}>
-          Última: {new Date(last.date).toLocaleDateString('pt-BR')}
-        </p>
       )}
+
+      {isLoading ? <Skeleton className="h-20 rounded-2xl" style={{ background: '#2A2A2A' }} />
+        : !assessments.length ? (
+          <div className="text-center py-4" style={{ color: '#555555' }}>
+            <Activity size={28} className="mx-auto mb-2 opacity-30" />
+            <p className="text-sm">Nenhuma avaliação. Clique em Editar para adicionar.</p>
+          </div>
+        ) : assessments.map(a => (
+          <div key={a.id} className="rounded-2xl border p-4" style={{ background: '#222222', borderColor: '#2A2A2A' }}>
+            <p className="text-xs mb-3" style={{ color: '#555555' }}>
+              {new Date(a.date).toLocaleDateString('pt-BR')} — {a.type === 'bioimpedance' ? 'Bioimpedância' : 'Dobras Pollock'}
+            </p>
+            <div className="grid grid-cols-2 gap-2">
+              {[['Peso', `${a.weight} kg`], ['IMC', a.bmi.toFixed(1)], ['% Gordura', a.body_fat_percentage ? `${a.body_fat_percentage}%` : '-'], ['Massa muscular', a.muscle_mass ? `${a.muscle_mass} kg` : '-']].map(([label, val]) => (
+                <div key={label} className="rounded-xl p-3" style={{ background: '#1A1A1A' }}>
+                  <p className="text-xs" style={{ color: '#555555' }}>{label}</p>
+                  <p className="text-base font-bold mt-0.5" style={{ color: '#C8FF00', fontFamily: 'Poppins, sans-serif' }}>{val}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        ))}
     </div>
   )
 }
 
 // ─── Exames Panel ─────────────────────────────────────────────────
 function ExamesPanel({ studentId }: { studentId: string }) {
+  const qc = useQueryClient()
+  const [adding, setAdding] = useState(false)
+  const [form, setForm] = useState({ file_name: '', file_type: 'pdf', notes: '' })
+
   const { data: exams = [], isLoading } = useQuery({
     queryKey: ['exams', studentId],
     queryFn: () => examService.list(studentId),
   })
 
-  if (isLoading) return <div className="p-5"><Skeleton className="h-8 w-full" style={{ background: '#2A2A2A' }} /></div>
-  if (!exams.length) return (
-    <div className="p-5 text-center" style={{ color: '#555555' }}>
-      <FileText size={32} className="mx-auto mb-2 opacity-30" />
-      <p className="text-sm">Nenhum exame enviado.</p>
-    </div>
-  )
+  const save = useMutation({
+    mutationFn: () => examService.add(studentId, form),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['exams', studentId] }); toast.success('Exame adicionado!'); setAdding(false); setForm({ file_name: '', file_type: 'pdf', notes: '' }) },
+  })
+
+  const f = (k: keyof typeof form) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) =>
+    setForm(p => ({ ...p, [k]: e.target.value }))
 
   return (
     <div className="p-5 overflow-y-auto flex-1 flex flex-col gap-3">
-      {exams.map(exam => (
-        <div key={exam.id} className="flex items-center justify-between p-3 rounded-xl border" style={{ background: '#222222', borderColor: '#2A2A2A' }}>
-          <div className="flex items-center gap-3">
-            <span className="text-xl">{exam.file_type === 'pdf' ? '📄' : '🖼️'}</span>
-            <div>
-              <p className="text-xs font-medium" style={{ color: '#FFFFFF' }}>{exam.file_name}</p>
-              <p className="text-xs" style={{ color: '#555555' }}>{new Date(exam.uploaded_at).toLocaleDateString('pt-BR')}</p>
+      <div className="flex justify-end">
+        <EditBar isEditing={adding} onEdit={() => setAdding(true)}
+          onSave={() => save.mutate()} onCancel={() => setAdding(false)} saving={save.isPending} />
+      </div>
+
+      {adding && (
+        <div className="rounded-2xl border p-4 flex flex-col gap-3" style={{ background: '#222222', borderColor: 'rgba(200,255,0,0.3)' }}>
+          <p className="text-xs font-semibold" style={{ color: '#C8FF00', fontFamily: 'Poppins, sans-serif' }}>Adicionar exame</p>
+          <div><label className={lblCls} style={{ color: '#555555' }}>Nome do arquivo</label><input value={form.file_name} onChange={f('file_name')} placeholder="ex: hemograma_jun2025.pdf" className={iCls} style={iStyle} /></div>
+          <div>
+            <label className={lblCls} style={{ color: '#555555' }}>Tipo</label>
+            <select value={form.file_type} onChange={f('file_type')} className={iCls} style={iStyle}>
+              <option value="pdf">PDF</option>
+              <option value="image">Imagem</option>
+            </select>
+          </div>
+          <div><label className={lblCls} style={{ color: '#555555' }}>Observações</label><textarea value={form.notes} onChange={f('notes')} rows={2} className={iCls + ' resize-none'} style={iStyle} /></div>
+        </div>
+      )}
+
+      {isLoading ? <Skeleton className="h-14 rounded-xl" style={{ background: '#2A2A2A' }} />
+        : !exams.length ? (
+          <div className="text-center py-4" style={{ color: '#555555' }}>
+            <FileText size={28} className="mx-auto mb-2 opacity-30" />
+            <p className="text-sm">Nenhum exame. Clique em Editar para adicionar.</p>
+          </div>
+        ) : exams.map(exam => (
+          <div key={exam.id} className="flex items-center justify-between p-3 rounded-xl border" style={{ background: '#222222', borderColor: '#2A2A2A' }}>
+            <div className="flex items-center gap-3">
+              <span className="text-xl">{exam.file_type === 'pdf' ? '📄' : '🖼️'}</span>
+              <div>
+                <p className="text-xs font-medium" style={{ color: '#FFFFFF' }}>{exam.file_name}</p>
+                <p className="text-xs" style={{ color: '#555555' }}>{new Date(exam.uploaded_at).toLocaleDateString('pt-BR')}</p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              <Badge style={{ background: exam.status === 'analisado' ? 'rgba(200,255,0,0.12)' : 'rgba(245,158,11,0.12)', color: exam.status === 'analisado' ? '#C8FF00' : '#F59E0B', border: 'none', borderRadius: '9999px', fontSize: '10px' }}>
+                {exam.status === 'analisado' ? <span className="flex items-center gap-1"><CheckCircle size={10} />OK</span> : <span className="flex items-center gap-1"><Clock size={10} />Pendente</span>}
+              </Badge>
+              <a href={exam.file_url} target="_blank" rel="noopener noreferrer">
+                <button className="p-1.5 rounded-lg hover:bg-white/10 transition-all"><Download size={13} style={{ color: '#888888' }} /></button>
+              </a>
             </div>
           </div>
-          <div className="flex items-center gap-2">
-            <Badge style={{
-              background: exam.status === 'analisado' ? 'rgba(200,255,0,0.12)' : 'rgba(245,158,11,0.12)',
-              color: exam.status === 'analisado' ? '#C8FF00' : '#F59E0B',
-              border: 'none', borderRadius: '9999px', fontSize: '10px',
-            }}>
-              {exam.status === 'analisado'
-                ? <span className="flex items-center gap-1"><CheckCircle size={10} />OK</span>
-                : <span className="flex items-center gap-1"><Clock size={10} />Pendente</span>}
-            </Badge>
-            <a href={exam.file_url} target="_blank" rel="noopener noreferrer">
-              <button className="p-1.5 rounded-lg hover:bg-white/10 transition-all">
-                <Download size={13} style={{ color: '#888888' }} />
-              </button>
-            </a>
-          </div>
-        </div>
-      ))}
+        ))}
     </div>
   )
 }
 
 // ─── Evolução Panel ───────────────────────────────────────────────
 function EvolucaoPanel({ studentId }: { studentId: string }) {
+  const qc = useQueryClient()
+  const [adding, setAdding] = useState(false)
+  const [form, setForm] = useState({ weight: '', note: '' })
+
   const { data: history = [], isLoading } = useQuery({
     queryKey: ['weight', studentId],
     queryFn: () => weightService.getHistory(studentId),
+  })
+
+  const save = useMutation({
+    mutationFn: () => weightService.add(studentId, { weight: Number(form.weight), note: form.note }),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['weight', studentId] }); toast.success('Peso registrado!'); setAdding(false); setForm({ weight: '', note: '' }) },
   })
 
   const chartData = history.map(w => ({
@@ -387,73 +545,124 @@ function EvolucaoPanel({ studentId }: { studentId: string }) {
     peso: w.weight,
   }))
 
-  if (isLoading) return <div className="p-5"><Skeleton className="h-32 w-full rounded-xl" style={{ background: '#2A2A2A' }} /></div>
-
   return (
     <div className="p-5 overflow-y-auto flex-1 flex flex-col gap-4">
-      <div className="rounded-2xl border p-4" style={{ background: '#222222', borderColor: '#2A2A2A' }}>
-        <p className="text-xs uppercase tracking-wide mb-4" style={{ color: '#555555' }}>Evolução do peso</p>
-        {chartData.length === 0 ? (
-          <p className="text-sm text-center py-4" style={{ color: '#555555' }}>Nenhum registro de peso.</p>
-        ) : (
-          <ResponsiveContainer width="100%" height={160}>
-            <LineChart data={chartData}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#2A2A2A" />
-              <XAxis dataKey="date" tick={{ fill: '#555555', fontSize: 10 }} axisLine={false} tickLine={false} />
-              <YAxis domain={['auto', 'auto']} tick={{ fill: '#555555', fontSize: 10 }} axisLine={false} tickLine={false} width={30} />
-              <Tooltip contentStyle={{ background: '#1A1A1A', border: '1px solid #2A2A2A', borderRadius: '12px', color: '#FFFFFF' }} labelStyle={{ color: '#888888' }} />
-              <Line type="monotone" dataKey="peso" stroke="#C8FF00" strokeWidth={2} dot={{ fill: '#C8FF00', r: 3 }} />
-            </LineChart>
-          </ResponsiveContainer>
-        )}
+      <div className="flex justify-end">
+        <EditBar isEditing={adding} onEdit={() => setAdding(true)}
+          onSave={() => save.mutate()} onCancel={() => setAdding(false)} saving={save.isPending} />
       </div>
-      <div className="flex flex-col gap-2">
-        {history.slice(0, 5).map(w => (
-          <div key={w.id} className="flex items-center justify-between p-3 rounded-xl" style={{ background: '#222222' }}>
-            <span className="text-xs" style={{ color: '#888888' }}>
-              {new Date(w.recorded_at).toLocaleDateString('pt-BR')}
-            </span>
-            <span className="text-sm font-bold" style={{ color: '#C8FF00', fontFamily: 'Poppins, sans-serif' }}>
-              {w.weight} kg
-            </span>
+
+      {adding && (
+        <div className="rounded-2xl border p-4 flex flex-col gap-3" style={{ background: '#222222', borderColor: 'rgba(200,255,0,0.3)' }}>
+          <p className="text-xs font-semibold" style={{ color: '#C8FF00', fontFamily: 'Poppins, sans-serif' }}>Registrar peso</p>
+          <div><label className={lblCls} style={{ color: '#555555' }}>Peso (kg)</label><input type="number" step="0.1" value={form.weight} onChange={e => setForm(p => ({ ...p, weight: e.target.value }))} placeholder="ex: 72.5" className={iCls} style={iStyle} /></div>
+          <div><label className={lblCls} style={{ color: '#555555' }}>Observação (opcional)</label><input value={form.note} onChange={e => setForm(p => ({ ...p, note: e.target.value }))} placeholder="ex: em jejum" className={iCls} style={iStyle} /></div>
+        </div>
+      )}
+
+      {isLoading ? <Skeleton className="h-32 rounded-xl" style={{ background: '#2A2A2A' }} /> : (
+        <>
+          <div className="rounded-2xl border p-4" style={{ background: '#222222', borderColor: '#2A2A2A' }}>
+            <p className="text-xs uppercase tracking-wide mb-3" style={{ color: '#555555' }}>Evolução do peso</p>
+            {chartData.length === 0 ? <p className="text-sm text-center py-4" style={{ color: '#555555' }}>Nenhum registro.</p> : (
+              <ResponsiveContainer width="100%" height={140}>
+                <LineChart data={chartData}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#2A2A2A" />
+                  <XAxis dataKey="date" tick={{ fill: '#555555', fontSize: 10 }} axisLine={false} tickLine={false} />
+                  <YAxis domain={['auto', 'auto']} tick={{ fill: '#555555', fontSize: 10 }} axisLine={false} tickLine={false} width={30} />
+                  <Tooltip contentStyle={{ background: '#1A1A1A', border: '1px solid #2A2A2A', borderRadius: '12px', color: '#FFFFFF' }} labelStyle={{ color: '#888888' }} />
+                  <Line type="monotone" dataKey="peso" stroke="#C8FF00" strokeWidth={2} dot={{ fill: '#C8FF00', r: 3 }} />
+                </LineChart>
+              </ResponsiveContainer>
+            )}
           </div>
-        ))}
-      </div>
+          <div className="flex flex-col gap-2">
+            {history.slice(0, 6).map(w => (
+              <div key={w.id} className="flex items-center justify-between p-3 rounded-xl" style={{ background: '#222222' }}>
+                <span className="text-xs" style={{ color: '#888888' }}>{new Date(w.recorded_at).toLocaleDateString('pt-BR')}</span>
+                <span className="text-sm font-bold" style={{ color: '#C8FF00', fontFamily: 'Poppins, sans-serif' }}>{w.weight} kg</span>
+              </div>
+            ))}
+          </div>
+        </>
+      )}
     </div>
   )
 }
 
 // ─── Assinatura Panel ─────────────────────────────────────────────
 function AssinaturaPanel({ student }: { student: Student }) {
+  const qc = useQueryClient()
   const sub = student.subscription
-  if (!sub) return (
-    <div className="p-5 text-center" style={{ color: '#555555' }}>
-      <CreditCard size={32} className="mx-auto mb-2 opacity-30" />
-      <p className="text-sm">Nenhuma assinatura ativa.</p>
-    </div>
-  )
+  const [editing, setEditing] = useState(false)
+  const [form, setForm] = useState({
+    plan: sub?.plan ?? 'mensal',
+    status: sub?.status ?? 'ativo',
+    expires_at: sub?.expires_at ? sub.expires_at.split('T')[0] : '',
+    price: String(sub?.price ?? ''),
+  })
 
-  const statusColor = sub.status === 'ativo' ? '#C8FF00'
-    : sub.status === 'vencendo' ? '#F59E0B'
-    : sub.status === 'vencido' ? '#EF4444'
-    : '#888888'
+  const save = useMutation({
+    mutationFn: () => studentService.update(student.id, {
+      subscription: sub ? { ...sub, plan: form.plan as 'mensal' | 'trimestral' | 'semestral' | 'anual', status: form.status as 'ativo' | 'vencendo' | 'vencido' | 'cancelado', expires_at: form.expires_at ? new Date(form.expires_at).toISOString() : sub.expires_at, price: Number(form.price) } : undefined
+    }),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['students'] }); toast.success('Assinatura atualizada!'); setEditing(false) },
+  })
+
+  const f = (k: keyof typeof form) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) =>
+    setForm(p => ({ ...p, [k]: e.target.value }))
+
+  const sColor = (s: string) => s === 'ativo' ? '#C8FF00' : s === 'vencendo' ? '#F59E0B' : s === 'vencido' ? '#EF4444' : '#888888'
 
   return (
     <div className="p-5 overflow-y-auto flex-1 flex flex-col gap-4">
-      <div className="rounded-2xl border p-4" style={{ background: '#222222', borderColor: '#2A2A2A' }}>
-        <InfoRow label="Plano" value={sub.plan} />
-        <div className="flex flex-col gap-0.5 py-2.5 border-b" style={{ borderColor: '#2A2A2A' }}>
-          <span className="text-xs uppercase tracking-wide" style={{ color: '#555555' }}>Status</span>
-          <span className="text-sm font-semibold" style={{ color: statusColor }}>{sub.status}</span>
-        </div>
-        <InfoRow label="Início" value={new Date(sub.started_at).toLocaleDateString('pt-BR')} />
-        <InfoRow label="Expira em" value={new Date(sub.expires_at).toLocaleDateString('pt-BR')} />
-        <InfoRow label="Valor" value={`R$ ${sub.price.toFixed(2)}`} />
+      <div className="flex justify-end">
+        <EditBar isEditing={editing} onEdit={() => setEditing(true)}
+          onSave={() => save.mutate()} onCancel={() => setEditing(false)} saving={save.isPending} />
       </div>
-      <Button className="w-full font-semibold"
-        style={{ background: '#C8FF00', color: '#111111', borderRadius: '12px', fontFamily: 'Poppins, sans-serif' }}>
-        Renovar assinatura
-      </Button>
+
+      {!sub && !editing ? (
+        <div className="text-center py-6" style={{ color: '#555555' }}>
+          <CreditCard size={32} className="mx-auto mb-2 opacity-30" />
+          <p className="text-sm mb-3">Nenhuma assinatura. Clique em Editar para adicionar.</p>
+        </div>
+      ) : !editing ? (
+        <div className="rounded-2xl border p-4" style={{ background: '#222222', borderColor: '#2A2A2A' }}>
+          <InfoRow label="Plano" value={sub!.plan} />
+          <div className="flex flex-col gap-0.5 py-2.5 border-b" style={{ borderColor: '#2A2A2A' }}>
+            <span className="text-xs uppercase tracking-wide" style={{ color: '#555555' }}>Status</span>
+            <span className="text-sm font-semibold" style={{ color: sColor(sub!.status) }}>{sub!.status}</span>
+          </div>
+          <InfoRow label="Início" value={new Date(sub!.started_at).toLocaleDateString('pt-BR')} />
+          <InfoRow label="Expira em" value={new Date(sub!.expires_at).toLocaleDateString('pt-BR')} />
+          <InfoRow label="Valor" value={`R$ ${sub!.price.toFixed(2)}`} />
+        </div>
+      ) : (
+        <div className="rounded-2xl border p-4 flex flex-col gap-3" style={{ background: '#222222', borderColor: 'rgba(200,255,0,0.3)' }}>
+          <div>
+            <label className={lblCls} style={{ color: '#555555' }}>Plano</label>
+            <select value={form.plan} onChange={f('plan')} className={iCls} style={iStyle}>
+              {['mensal', 'trimestral', 'semestral', 'anual'].map(p => <option key={p} value={p}>{p}</option>)}
+            </select>
+          </div>
+          <div>
+            <label className={lblCls} style={{ color: '#555555' }}>Status</label>
+            <select value={form.status} onChange={f('status')} className={iCls} style={iStyle}>
+              {['ativo', 'vencendo', 'vencido', 'cancelado'].map(s => <option key={s} value={s}>{s}</option>)}
+            </select>
+          </div>
+          <div><label className={lblCls} style={{ color: '#555555' }}>Expira em</label><input type="date" value={form.expires_at} onChange={f('expires_at')} className={iCls} style={iStyle} /></div>
+          <div><label className={lblCls} style={{ color: '#555555' }}>Valor (R$)</label><input type="number" value={form.price} onChange={f('price')} className={iCls} style={iStyle} /></div>
+        </div>
+      )}
+
+      {!editing && (
+        <Button onClick={() => { setForm({ plan: sub?.plan ?? 'mensal', status: sub?.status ?? 'ativo', expires_at: sub?.expires_at ? sub.expires_at.split('T')[0] : '', price: String(sub?.price ?? '') }); setEditing(true) }}
+          className="w-full font-semibold"
+          style={{ background: '#C8FF00', color: '#111111', borderRadius: '12px', fontFamily: 'Poppins, sans-serif' }}>
+          Renovar / Editar assinatura
+        </Button>
+      )}
     </div>
   )
 }
