@@ -3,10 +3,16 @@ import { MOCK_STUDENTS, MOCK_ANAMNESIS, MOCK_ASSESSMENTS, MOCK_EXAMS, MOCK_WEIGH
 
 export const studentService = {
   async list(nutritionistId: string): Promise<Student[]> {
-    // TODO: conectar Supabase
-    // const { data } = await supabase.from('profiles').select('*, subscriptions(*)').eq('nutritionist_id', nutritionistId)
     void nutritionistId
     await new Promise(r => setTimeout(r, 400))
+    // Auto-expire: se a assinatura venceu, marca como inativo automaticamente
+    const now = new Date()
+    MOCK_STUDENTS.forEach(s => {
+      if (s.subscription?.expires_at && new Date(s.subscription.expires_at) < now && s.status === 'ativo') {
+        s.status = 'inativo'
+        s.subscription.status = 'vencido'
+      }
+    })
     return MOCK_STUDENTS
   },
 
@@ -27,17 +33,15 @@ export const studentService = {
   },
 
   async updateStatus(id: string, status: Student['status']): Promise<void> {
-    // TODO: conectar Supabase
-    void id
-    void status
     await new Promise(r => setTimeout(r, 200))
+    const s = MOCK_STUDENTS.find(s => s.id === id)
+    if (s) s.status = status
   },
 
   async update(id: string, data: Partial<Student>): Promise<void> {
-    // TODO: conectar Supabase
-    void id
-    void data
     await new Promise(r => setTimeout(r, 300))
+    const idx = MOCK_STUDENTS.findIndex(s => s.id === id)
+    if (idx >= 0) MOCK_STUDENTS[idx] = { ...MOCK_STUDENTS[idx], ...data }
   },
 
   async delete(id: string): Promise<void> {
@@ -80,7 +84,7 @@ export const assessmentService = {
   async add(userId: string, data: Omit<Assessment, 'id' | 'user_id' | 'bmi'>): Promise<Assessment> {
     await new Promise(r => setTimeout(r, 400))
     const bmi = data.height > 0 ? Number((data.weight / ((data.height / 100) ** 2)).toFixed(1)) : 0
-    const record: Assessment = { ...data, id: String(Date.now()), user_id: userId, bmi }
+    const record: Assessment = { ...data, id: String(Date.now()), user_id: userId, bmi, type: 'bioimpedance' }
     if (!MOCK_ASSESSMENTS[userId]) MOCK_ASSESSMENTS[userId] = []
     MOCK_ASSESSMENTS[userId].unshift(record)
     return record

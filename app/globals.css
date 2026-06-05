@@ -99,6 +99,14 @@
   ::-webkit-scrollbar-track { background: #262626; }
   ::-webkit-scrollbar-thumb { background: #3D3D3D; border-radius: 3px; }
 
+  /* Dropdown menu items — prevent green highlight over white text */
+  [data-radix-dropdown-menu-content] [role="menuitem"]:hover,
+  [data-radix-dropdown-menu-content] [role="menuitem"]:focus,
+  [data-radix-dropdown-menu-content] [data-highlighted] {
+    background: rgba(255,255,255,0.08) !important;
+    color: inherit !important;
+  }
+
   /* Time input — dark color scheme so native picker renders dark */
   input[type="time"] {
     color-scheme: dark;

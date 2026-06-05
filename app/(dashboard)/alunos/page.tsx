@@ -377,10 +377,21 @@ function NutricaoPanel({ student }: { student: Student }) {
 }
 
 // ─── Avaliação Panel ──────────────────────────────────────────────
+const MEASUREMENTS = [
+  { key: 'cintura',     label: 'Cintura (cm)' },
+  { key: 'quadril',     label: 'Quadril (cm)' },
+  { key: 'braco',       label: 'Braço (cm)' },
+  { key: 'antebraco',   label: 'Antebraço (cm)' },
+  { key: 'peitoral',    label: 'Peitoral (cm)' },
+  { key: 'perna',       label: 'Perna (cm)' },
+  { key: 'panturrilha', label: 'Panturrilha (cm)' },
+]
+
 function AvaliacaoPanel({ studentId }: { studentId: string }) {
   const qc = useQueryClient()
   const [adding, setAdding] = useState(false)
-  const [form, setForm] = useState({ date: '', type: 'bioimpedance', weight: '', height: '', body_fat_percentage: '', muscle_mass: '' })
+  const emptyForm = { date: '', weight: '', height: '', body_fat_percentage: '', muscle_mass: '', visceral_fat: '', bone_mass: '', cintura: '', quadril: '', braco: '', antebraco: '', peitoral: '', perna: '', panturrilha: '' }
+  const [form, setForm] = useState(emptyForm)
 
   const { data: assessments = [], isLoading } = useQuery({
     queryKey: ['assessments', studentId],
@@ -388,17 +399,24 @@ function AvaliacaoPanel({ studentId }: { studentId: string }) {
   })
 
   const save = useMutation({
-    mutationFn: () => assessmentService.add(studentId, {
-      type: form.type as 'bioimpedance' | 'pollock',
-      date: form.date || new Date().toISOString().split('T')[0],
-      weight: Number(form.weight), height: Number(form.height),
-      body_fat_percentage: form.body_fat_percentage ? Number(form.body_fat_percentage) : undefined,
-      muscle_mass: form.muscle_mass ? Number(form.muscle_mass) : undefined,
-    }),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ['assessments', studentId] }); toast.success('Avaliação registrada!'); setAdding(false) },
+    mutationFn: () => {
+      const measurements: Record<string, number> = {}
+      MEASUREMENTS.forEach(({ key }) => { if (form[key as keyof typeof form]) measurements[key] = Number(form[key as keyof typeof form]) })
+      return assessmentService.add(studentId, {
+        type: 'bioimpedance',
+        date: form.date || new Date().toISOString().split('T')[0],
+        weight: Number(form.weight), height: Number(form.height),
+        body_fat_percentage: form.body_fat_percentage ? Number(form.body_fat_percentage) : undefined,
+        muscle_mass: form.muscle_mass ? Number(form.muscle_mass) : undefined,
+        visceral_fat: form.visceral_fat ? Number(form.visceral_fat) : undefined,
+        bone_mass: form.bone_mass ? Number(form.bone_mass) : undefined,
+        measurements: Object.keys(measurements).length > 0 ? measurements : undefined,
+      })
+    },
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['assessments', studentId] }); toast.success('Avaliação registrada!'); setAdding(false); setForm(emptyForm) },
   })
 
-  const f = (k: keyof typeof form) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) =>
+  const fv = (k: keyof typeof form) => (e: React.ChangeEvent<HTMLInputElement>) =>
     setForm(p => ({ ...p, [k]: e.target.value }))
 
   return (
@@ -410,21 +428,32 @@ function AvaliacaoPanel({ studentId }: { studentId: string }) {
       </div>
 
       {adding && (
-        <div className="rounded-2xl border p-4 flex flex-col gap-3" style={{ background: '#2F2F2F', borderColor: 'rgba(200,255,0,0.3)' }}>
-          <p className="text-xs font-semibold" style={{ color: '#C8FF00', fontFamily: 'Poppins, sans-serif' }}>Nova avaliação</p>
+        <div className="rounded-2xl border p-4 flex flex-col gap-4" style={{ background: '#2F2F2F', borderColor: 'rgba(200,255,0,0.3)' }}>
+          <p className="text-xs font-semibold" style={{ color: '#C8FF00', fontFamily: 'Poppins, sans-serif' }}>Nova avaliação — Bioimpedância</p>
+
+          {/* Dados gerais */}
           <div className="grid grid-cols-2 gap-3">
-            <div><label className={lblCls} style={{ color: '#555555' }}>Data</label><input type="date" value={form.date} onChange={f('date')} className={iCls} style={iStyle} /></div>
-            <div>
-              <label className={lblCls} style={{ color: '#555555' }}>Tipo</label>
-              <select value={form.type} onChange={f('type')} className={iCls} style={iStyle}>
-                <option value="bioimpedance">Bioimpedância</option>
-                <option value="pollock">Dobras Pollock</option>
-              </select>
+            <div><label className={lblCls} style={{ color: '#555555' }}>Data</label><input type="date" value={form.date} onChange={fv('date')} className={iCls} style={iStyle} /></div>
+            <div><label className={lblCls} style={{ color: '#555555' }}>Peso (kg)</label><input type="number" value={form.weight} onChange={fv('weight')} className={iCls} style={iStyle} placeholder="ex: 72.5" /></div>
+            <div><label className={lblCls} style={{ color: '#555555' }}>Altura (cm)</label><input type="number" value={form.height} onChange={fv('height')} className={iCls} style={iStyle} placeholder="ex: 165" /></div>
+            <div><label className={lblCls} style={{ color: '#555555' }}>% Gordura</label><input type="number" value={form.body_fat_percentage} onChange={fv('body_fat_percentage')} className={iCls} style={iStyle} placeholder="ex: 22" /></div>
+            <div><label className={lblCls} style={{ color: '#555555' }}>Massa muscular (kg)</label><input type="number" value={form.muscle_mass} onChange={fv('muscle_mass')} className={iCls} style={iStyle} /></div>
+            <div><label className={lblCls} style={{ color: '#555555' }}>Gordura visceral</label><input type="number" value={form.visceral_fat} onChange={fv('visceral_fat')} className={iCls} style={iStyle} /></div>
+            <div><label className={lblCls} style={{ color: '#555555' }}>Massa óssea (kg)</label><input type="number" value={form.bone_mass} onChange={fv('bone_mass')} className={iCls} style={iStyle} /></div>
+          </div>
+
+          {/* Medidas corporais */}
+          <div>
+            <p className="text-xs font-semibold mb-2" style={{ color: '#888888', fontFamily: 'Poppins, sans-serif' }}>Medidas corporais (cm)</p>
+            <div className="grid grid-cols-2 gap-3">
+              {MEASUREMENTS.map(({ key, label }) => (
+                <div key={key}>
+                  <label className={lblCls} style={{ color: '#555555' }}>{label}</label>
+                  <input type="number" value={form[key as keyof typeof form]} onChange={fv(key as keyof typeof form)}
+                    className={iCls} style={iStyle} placeholder="—" />
+                </div>
+              ))}
             </div>
-            <div><label className={lblCls} style={{ color: '#555555' }}>Peso (kg)</label><input type="number" value={form.weight} onChange={f('weight')} className={iCls} style={iStyle} /></div>
-            <div><label className={lblCls} style={{ color: '#555555' }}>Altura (cm)</label><input type="number" value={form.height} onChange={f('height')} className={iCls} style={iStyle} /></div>
-            <div><label className={lblCls} style={{ color: '#555555' }}>% Gordura</label><input type="number" value={form.body_fat_percentage} onChange={f('body_fat_percentage')} className={iCls} style={iStyle} /></div>
-            <div><label className={lblCls} style={{ color: '#555555' }}>Massa muscular (kg)</label><input type="number" value={form.muscle_mass} onChange={f('muscle_mass')} className={iCls} style={iStyle} /></div>
           </div>
         </div>
       )}
@@ -438,16 +467,36 @@ function AvaliacaoPanel({ studentId }: { studentId: string }) {
         ) : assessments.map(a => (
           <div key={a.id} className="rounded-2xl border p-4" style={{ background: '#2F2F2F', borderColor: '#3D3D3D' }}>
             <p className="text-xs mb-3" style={{ color: '#555555' }}>
-              {new Date(a.date).toLocaleDateString('pt-BR')} — {a.type === 'bioimpedance' ? 'Bioimpedância' : 'Dobras Pollock'}
+              {new Date(a.date).toLocaleDateString('pt-BR')} — Bioimpedância
             </p>
             <div className="grid grid-cols-2 gap-2">
-              {[['Peso', `${a.weight} kg`], ['IMC', a.bmi.toFixed(1)], ['% Gordura', a.body_fat_percentage ? `${a.body_fat_percentage}%` : '-'], ['Massa muscular', a.muscle_mass ? `${a.muscle_mass} kg` : '-']].map(([label, val]) => (
+              {[
+                ['Peso', `${a.weight} kg`],
+                ['IMC', a.bmi.toFixed(1)],
+                ['% Gordura', a.body_fat_percentage ? `${a.body_fat_percentage}%` : '-'],
+                ['Massa muscular', a.muscle_mass ? `${a.muscle_mass} kg` : '-'],
+                ['Gordura visceral', a.visceral_fat ? String(a.visceral_fat) : '-'],
+                ['Massa óssea', a.bone_mass ? `${a.bone_mass} kg` : '-'],
+              ].map(([label, val]) => (
                 <div key={label} className="rounded-xl p-3" style={{ background: '#262626' }}>
                   <p className="text-xs" style={{ color: '#555555' }}>{label}</p>
-                  <p className="text-base font-bold mt-0.5" style={{ color: '#C8FF00', fontFamily: 'Poppins, sans-serif' }}>{val}</p>
+                  <p className="text-sm font-bold mt-0.5" style={{ color: '#C8FF00', fontFamily: 'Poppins, sans-serif' }}>{val}</p>
                 </div>
               ))}
             </div>
+            {a.measurements && Object.keys(a.measurements).length > 0 && (
+              <div className="mt-3 pt-3 border-t" style={{ borderColor: '#3D3D3D' }}>
+                <p className="text-xs mb-2" style={{ color: '#555555' }}>Medidas corporais</p>
+                <div className="grid grid-cols-3 gap-1.5">
+                  {MEASUREMENTS.filter(m => a.measurements?.[m.key]).map(({ key, label }) => (
+                    <div key={key} className="rounded-lg px-2 py-1.5" style={{ background: '#262626' }}>
+                      <p className="text-xs" style={{ color: '#555555' }}>{label.split(' ')[0]}</p>
+                      <p className="text-xs font-bold" style={{ color: '#FFFFFF' }}>{a.measurements![key]} cm</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         ))}
     </div>
@@ -458,7 +507,8 @@ function AvaliacaoPanel({ studentId }: { studentId: string }) {
 function ExamesPanel({ studentId }: { studentId: string }) {
   const qc = useQueryClient()
   const [adding, setAdding] = useState(false)
-  const [form, setForm] = useState({ file_name: '', file_type: 'pdf', notes: '' })
+  const [selectedFile, setSelectedFile] = useState<File | null>(null)
+  const [notes, setNotes] = useState('')
 
   const { data: exams = [], isLoading } = useQuery({
     queryKey: ['exams', studentId],
@@ -466,32 +516,55 @@ function ExamesPanel({ studentId }: { studentId: string }) {
   })
 
   const save = useMutation({
-    mutationFn: () => examService.add(studentId, form),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ['exams', studentId] }); toast.success('Exame adicionado!'); setAdding(false); setForm({ file_name: '', file_type: 'pdf', notes: '' }) },
+    mutationFn: () => {
+      if (!selectedFile) throw new Error('Selecione um arquivo')
+      const fileType = selectedFile.type.includes('pdf') ? 'pdf' : 'image'
+      return examService.add(studentId, { file_name: selectedFile.name, file_type: fileType, notes })
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['exams', studentId] })
+      toast.success('Exame carregado!')
+      setAdding(false); setSelectedFile(null); setNotes('')
+    },
   })
-
-  const f = (k: keyof typeof form) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) =>
-    setForm(p => ({ ...p, [k]: e.target.value }))
 
   return (
     <div className="p-5 overflow-y-auto flex-1 flex flex-col gap-3">
       <div className="flex justify-end">
         <EditBar isEditing={adding} onEdit={() => setAdding(true)}
-          onSave={() => save.mutate()} onCancel={() => setAdding(false)} saving={save.isPending} />
+          onSave={() => save.mutate()} onCancel={() => { setAdding(false); setSelectedFile(null); setNotes('') }}
+          saving={save.isPending} />
       </div>
 
       {adding && (
         <div className="rounded-2xl border p-4 flex flex-col gap-3" style={{ background: '#2F2F2F', borderColor: 'rgba(200,255,0,0.3)' }}>
-          <p className="text-xs font-semibold" style={{ color: '#C8FF00', fontFamily: 'Poppins, sans-serif' }}>Adicionar exame</p>
-          <div><label className={lblCls} style={{ color: '#555555' }}>Nome do arquivo</label><input value={form.file_name} onChange={f('file_name')} placeholder="ex: hemograma_jun2025.pdf" className={iCls} style={iStyle} /></div>
+          <p className="text-xs font-semibold" style={{ color: '#C8FF00', fontFamily: 'Poppins, sans-serif' }}>Carregar exame</p>
+
+          {/* File drop zone */}
+          <label className="flex flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed py-6 cursor-pointer transition-all hover:border-[#C8FF00] hover:bg-[rgba(200,255,0,0.03)]"
+            style={{ borderColor: selectedFile ? '#C8FF00' : '#3D3D3D' }}>
+            <input type="file" accept=".pdf,.jpg,.jpeg,.png,.webp,.heic" className="hidden"
+              onChange={e => setSelectedFile(e.target.files?.[0] ?? null)} />
+            {selectedFile ? (
+              <>
+                <span className="text-2xl">{selectedFile.type.includes('pdf') ? '📄' : '🖼️'}</span>
+                <p className="text-sm font-medium text-center px-4" style={{ color: '#FFFFFF' }}>{selectedFile.name}</p>
+                <p className="text-xs" style={{ color: '#888888' }}>{(selectedFile.size / 1024).toFixed(0)} KB</p>
+              </>
+            ) : (
+              <>
+                <FileText size={28} style={{ color: '#555555' }} />
+                <p className="text-sm" style={{ color: '#888888' }}>Clique para selecionar arquivo</p>
+                <p className="text-xs" style={{ color: '#555555' }}>PDF, JPG, PNG, HEIC</p>
+              </>
+            )}
+          </label>
+
           <div>
-            <label className={lblCls} style={{ color: '#555555' }}>Tipo</label>
-            <select value={form.file_type} onChange={f('file_type')} className={iCls} style={iStyle}>
-              <option value="pdf">PDF</option>
-              <option value="image">Imagem</option>
-            </select>
+            <label className={lblCls} style={{ color: '#555555' }}>Observações (opcional)</label>
+            <textarea value={notes} onChange={e => setNotes(e.target.value)} rows={2}
+              className={iCls + ' resize-none'} style={iStyle} placeholder="ex: Hemograma solicitado em 05/06/2025" />
           </div>
-          <div><label className={lblCls} style={{ color: '#555555' }}>Observações</label><textarea value={form.notes} onChange={f('notes')} rows={2} className={iCls + ' resize-none'} style={iStyle} /></div>
         </div>
       )}
 
@@ -874,7 +947,7 @@ export default function AlunosPage() {
                                 <DropdownMenuItem
                                   key={item.key}
                                   onClick={() => openPanel(s, item.key)}
-                                  className="flex items-center gap-2.5 px-3 py-2 rounded-xl cursor-pointer transition-all"
+                                  className="flex items-center gap-2.5 px-3 py-2 rounded-xl cursor-pointer transition-all focus:bg-white/8 focus:text-white data-[highlighted]:bg-white/8 data-[highlighted]:text-white"
                                   style={{ color: selected?.student.id === s.id && selected?.section === item.key ? '#C8FF00' : '#FFFFFF' }}
                                 >
                                   <item.icon size={14} style={{ color: '#888888' }} />
