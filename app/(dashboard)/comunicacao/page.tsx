@@ -2,6 +2,7 @@
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { campaignService } from '@/lib/api/communications'
+import { studentService } from '@/lib/api/students'
 import Topbar from '@/components/layout/Topbar'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -58,6 +59,18 @@ function scheduleLabel(c: Campaign) {
 
 // ─── Template messages ────────────────────────────────────────────
 
+const QUICK_OBJECTIVES = [
+  { label: 'Plano vence amanhã',       emoji: '⏰', whatsapp: 'Olá! 👋\n\nSeu plano DenaVita vence AMANHÃ.\n\nRenove agora para não perder acesso ao seu plano personalizado! 💚\n\nAcesse o app e renove com um clique.',         pushTitle: 'Seu plano vence amanhã! ⏰', pushBody: 'Renove agora para não perder acesso ao seu plano.' },
+  { label: 'Plano vence em 2 dias',    emoji: '📅', whatsapp: 'Olá! 👋\n\nSeu plano DenaVita vence em 2 dias.\n\nNão deixe para a última hora! Renove agora e mantenha seu progresso. 💪',                                          pushTitle: 'Plano vence em 2 dias 📅',   pushBody: 'Renove agora e mantenha seu progresso sem interrupção.' },
+  { label: 'Plano vence em 7 dias',    emoji: '📆', whatsapp: 'Olá! 👋\n\nPassando para avisar que seu plano DenaVita vence em 7 dias.\n\nAproveite para renovar antes do vencimento e continue evoluindo! 🚀',                      pushTitle: 'Plano vence em 7 dias 📆',   pushBody: 'Você tem 7 dias para renovar. Não perca o prazo!' },
+  { label: 'Plano venceu hoje',        emoji: '❌', whatsapp: 'Olá! 👋\n\nSeu plano DenaVita venceu hoje.\n\nRenove agora para retomar o acesso ao seu plano alimentar e continuar seu progresso. Estou aqui para te ajudar! 💪',  pushTitle: 'Seu plano venceu ❌',        pushBody: 'Renove agora para retomar o acesso ao seu plano.' },
+  { label: 'Novo plano disponível',    emoji: '🥗', whatsapp: 'Olá! 🥗\n\nSeu novo plano alimentar personalizado está disponível no app DenaVita!\n\nAcesse agora e veja suas refeições atualizadas. 💪',                            pushTitle: 'Novo plano disponível! 🥗', pushBody: 'Seu plano foi atualizado. Confira as novas refeições!' },
+  { label: 'Registrar peso',           emoji: '⚖️', whatsapp: 'Oi! ⚖️\n\nNão esqueça de registrar seu peso hoje no app DenaVita.\n\nAcompanhar sua evolução é essencial para ajustarmos seu plano. 📊',                             pushTitle: 'Hora de registrar o peso ⚖️',pushBody: 'Registre seu peso de hoje e acompanhe sua evolução!' },
+  { label: 'Parabéns pelos resultados',emoji: '🏆', whatsapp: 'Parabéns! 🏆\n\nVi seu progresso e quero te parabenizar pelos resultados alcançados!\n\nContinue assim — você está no caminho certo! 💪✨',                             pushTitle: 'Parabéns pelos resultados! 🏆', pushBody: 'Você está indo muito bem. Continue assim!' },
+  { label: 'Promoção especial',        emoji: '🎉', whatsapp: '🎉 Promoção exclusiva para você!\n\n[Descreva a promoção aqui]\n\nPromoção por tempo limitado. Acesse o app para saber mais!',                                        pushTitle: 'Promoção especial 🎉',       pushBody: 'Aproveite a promoção exclusiva por tempo limitado!' },
+  { label: 'Cupom de suplementos',     emoji: '🏷️', whatsapp: '🏷️ Presente especial para você!\n\nCódigo de desconto exclusivo na loja DenaVita Suplementos:\n\nCódigo: [CÓDIGO]\n\nVálido até [DATA]. Aproveite! 🛍️',                 pushTitle: 'Cupom exclusivo chegou! 🎁', pushBody: 'Seu desconto exclusivo na loja DenaVita Suplementos.' },
+]
+
 function getTemplateMessages(type: CampaignType): { whatsapp: string; pushTitle: string; pushBody: string } {
   const t = {
     peso_feedback:  { whatsapp: 'Bom dia! 👋\n\nHora do check-in semanal! ⚖️\n\nEnvie seu peso em jejum e um breve feedback:\n- Como foi a semana?\n- Seguiu o plano alimentar?\n- Alguma dificuldade?\n\nSeu progresso é nossa prioridade! 💪', pushTitle: 'Check-in semanal ⚖️', pushBody: 'Registre seu peso e compartilhe seu feedback da semana!' },
@@ -80,6 +93,12 @@ function CampaignEditor({ campaign, onClose, onSaved }: {
 }) {
   const qc = useQueryClient()
   const isNew = !campaign?.id || campaign.id === '__new__'
+
+  const { data: allStudents = [] } = useQuery({
+    queryKey: ['students', 'nutri-1'],
+    queryFn: () => studentService.list('nutri-1'),
+  })
+  const activeStudents = allStudents.filter(s => s.status === 'ativo' || s.status === 'espera')
 
   const [form, setForm] = useState<Partial<Campaign>>(campaign ?? {
     name: '',
@@ -212,6 +231,72 @@ function CampaignEditor({ campaign, onClose, onSaved }: {
                 </button>
               )
             })}
+          </div>
+        </div>
+
+        {/* Student picker — visible when audience = personalizado */}
+        {form.audience === 'personalizado' && (
+          <div>
+            <div className="flex items-center justify-between mb-2">
+              <label className="text-xs uppercase tracking-wide" style={{ color: '#555555' }}>Selecionar alunos</label>
+              <span className="text-xs" style={{ color: '#C8FF00' }}>
+                {(form.selected_student_ids ?? []).length} selecionado{(form.selected_student_ids ?? []).length !== 1 ? 's' : ''}
+              </span>
+            </div>
+            <div className="flex flex-col gap-1.5 max-h-52 overflow-y-auto rounded-xl border p-2" style={{ borderColor: '#3D3D3D', background: '#1C1C1C' }}>
+              {activeStudents.length === 0 ? (
+                <p className="text-xs text-center py-3" style={{ color: '#555555' }}>Nenhum aluno ativo.</p>
+              ) : activeStudents.map(s => {
+                const ids = (form.selected_student_ids ?? [])
+                const checked = ids.includes(s.id)
+                return (
+                  <button key={s.id}
+                    onClick={() => {
+                      const next = checked ? ids.filter(id => id !== s.id) : [...ids, s.id]
+                      setForm(p => ({ ...p, selected_student_ids: next, audience_count: next.length }))
+                    }}
+                    className="flex items-center gap-3 px-3 py-2.5 rounded-xl border text-left transition-all"
+                    style={{ background: checked ? 'rgba(200,255,0,0.06)' : 'transparent', borderColor: checked ? '#C8FF00' : '#3D3D3D' }}>
+                    <div className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0"
+                      style={{ background: checked ? '#C8FF00' : '#2F2F2F', color: checked ? '#1C1C1C' : '#FFFFFF' }}>
+                      {s.name.charAt(0)}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs font-medium truncate" style={{ color: checked ? '#C8FF00' : '#FFFFFF' }}>{s.name}</p>
+                      <p className="text-xs truncate" style={{ color: '#555555' }}>{s.goal_label}</p>
+                    </div>
+                    {checked && <CheckCircle size={13} style={{ color: '#C8FF00' }} />}
+                  </button>
+                )
+              })}
+            </div>
+            <div className="flex gap-2 mt-1.5">
+              <button onClick={() => setForm(p => ({ ...p, selected_student_ids: activeStudents.map(s => s.id), audience_count: activeStudents.length }))}
+                className="text-xs px-2 py-1 rounded-lg transition-all hover:bg-white/10" style={{ color: '#888888' }}>
+                Selecionar todos
+              </button>
+              <button onClick={() => setForm(p => ({ ...p, selected_student_ids: [], audience_count: 0 }))}
+                className="text-xs px-2 py-1 rounded-lg transition-all hover:bg-white/10" style={{ color: '#888888' }}>
+                Limpar
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Quick objectives */}
+        <div>
+          <label className="text-xs uppercase tracking-wide mb-2 block" style={{ color: '#555555' }}>Objetivo de envio (atalho)</label>
+          <p className="text-xs mb-2" style={{ color: '#555555' }}>Clique para preencher a mensagem automaticamente</p>
+          <div className="flex flex-wrap gap-2">
+            {QUICK_OBJECTIVES.map(obj => (
+              <button key={obj.label}
+                onClick={() => setForm(p => ({ ...p, whatsapp_message: obj.whatsapp, push_title: obj.pushTitle, push_body: obj.pushBody }))}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-xs transition-all hover:border-[#C8FF00] hover:text-[#C8FF00]"
+                style={{ background: '#1C1C1C', borderColor: '#3D3D3D', color: '#888888' }}>
+                <span>{obj.emoji}</span>
+                <span>{obj.label}</span>
+              </button>
+            ))}
           </div>
         </div>
 

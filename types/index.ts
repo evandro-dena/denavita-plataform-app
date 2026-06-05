@@ -172,6 +172,7 @@ export interface Campaign {
   recurrence?: 'diario' | 'semanal' | 'quinzenal' | 'mensal'
   recurrence_weekday?: number
   recurrence_time?: string
+  selected_student_ids?: string[]
   whatsapp_message: string
   push_title: string
   push_body: string
