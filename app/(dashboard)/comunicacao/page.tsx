@@ -458,7 +458,10 @@ function CampaignCard({ campaign, onEdit, onDelete, onSend }: {
 export default function ComunicacaoPage() {
   const qc = useQueryClient()
   const [filter, setFilter] = useState<'todos' | Campaign['status']>('todos')
-  const [editing, setEditing] = useState<Campaign | null | '__new__'>('__new__' as never)
+  const [editing, setEditing] = useState<Campaign | 'new' | null>(null)
+  const openNew = () => setEditing('new')
+  const closeEditor = () => setEditing(null)
+  const editorKey = editing === null ? '' : editing === 'new' ? 'new' : (editing as Campaign).id
 
   const { data: campaigns = [], isLoading } = useQuery({
     queryKey: ['campaigns'],
@@ -478,6 +481,7 @@ export default function ComunicacaoPage() {
   const filtered = campaigns.filter(c => filter === 'todos' || c.status === filter)
 
   const panelOpen = editing !== null
+  const editingCampaign = editing !== null && editing !== 'new' ? editing as Campaign : null
 
   const stats = {
     total: campaigns.length,
@@ -492,7 +496,7 @@ export default function ComunicacaoPage() {
         title="Comunicação"
         subtitle="Gerencie campanhas e mensagens para seus alunos"
         action={
-          <Button onClick={() => setEditing({ id: '__new__' } as Campaign)}
+          <Button onClick={openNew}
             style={{ background: '#C8FF00', color: '#1C1C1C', borderRadius: '12px', fontFamily: 'Poppins, sans-serif', fontWeight: 600 }}>
             <Plus size={16} className="mr-2" /> Nova campanha
           </Button>
@@ -546,7 +550,7 @@ export default function ComunicacaoPage() {
             <div className="flex-1 flex flex-col items-center justify-center py-16" style={{ color: '#555555' }}>
               <Megaphone size={40} className="mb-3 opacity-20" />
               <p className="text-sm">Nenhuma campanha encontrada.</p>
-              <button onClick={() => setEditing({ id: '__new__' } as Campaign)}
+              <button onClick={openNew}
                 className="mt-3 text-xs px-4 py-2 rounded-xl transition-all hover:bg-white/10" style={{ color: '#C8FF00' }}>
                 + Criar primeira campanha
               </button>
@@ -570,9 +574,10 @@ export default function ComunicacaoPage() {
         {panelOpen && (
           <div className="w-[420px] flex-shrink-0 sticky top-0 rounded-2xl border overflow-hidden" style={{ height: 'calc(100vh - 120px)', borderColor: '#3D3D3D' }}>
             <CampaignEditor
-              campaign={editing && (editing as Campaign).id !== '__new__' ? editing as Campaign : null}
-              onClose={() => setEditing(null as never)}
-              onSaved={() => setEditing(null as never)}
+              key={editorKey}
+              campaign={editingCampaign}
+              onClose={closeEditor}
+              onSaved={closeEditor}
             />
           </div>
         )}
