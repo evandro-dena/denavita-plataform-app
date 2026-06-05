@@ -254,6 +254,8 @@ export default function StudentProfilePage({ params }: { params: Promise<{ id: s
   const [notifyOpen, setNotifyOpen] = useState(false)
   const [whatsappMsg, setWhatsappMsg] = useState('')
   const [notifyTemplate, setNotifyTemplate] = useState<string>('vencimento')
+  const [pushTitle, setPushTitle] = useState('')
+  const [pushBody, setPushBody] = useState('')
 
   if (isLoading) return <div className="p-8"><Skeleton className="h-12 w-64 mb-4" style={{ background: '#1A1A1A' }} /></div>
   if (!student) return <div className="p-8" style={{ color: '#888888' }}>Aluno não encontrado.</div>
@@ -275,30 +277,40 @@ export default function StudentProfilePage({ params }: { params: Promise<{ id: s
       label: 'Plano vencendo',
       icon: '⏰',
       message: `Olá ${student.name}! 👋\n\nPassando para avisar que o seu plano DenaVita ${student.subscription?.status === 'vencido' ? 'venceu' : `vence em ${expiresDate}`}.\n\nRenove agora para continuar tendo acesso ao seu plano alimentar personalizado e suporte contínuo. 💪\n\nQualquer dúvida, estou à disposição!`,
+      pushTitle: 'Seu plano está vencendo ⏰',
+      pushBody: `Renove agora para continuar com seu plano alimentar personalizado.`,
     },
     {
       id: 'aula',
       label: 'Aula nova no app',
       icon: '🎥',
       message: `Olá ${student.name}! 🎥\n\nTem conteúdo novo esperando por você no app DenaVita!\n\nUma nova aula foi adicionada ao seu plano — acesse agora e confira. 💪`,
+      pushTitle: 'Nova aula disponível! 🎥',
+      pushBody: 'Acesse o app DenaVita e confira o novo conteúdo do seu plano.',
     },
     {
       id: 'plano',
       label: 'Novo plano disponível',
       icon: '🥗',
       message: `Olá ${student.name}! 🥗\n\nSeu novo plano alimentar personalizado está disponível no app DenaVita!\n\nAcesse agora para ver suas refeições e começar com tudo. 💪`,
+      pushTitle: 'Novo plano alimentar 🥗',
+      pushBody: 'Seu plano personalizado foi atualizado. Acesse para conferir suas refeições.',
     },
     {
       id: 'peso',
       label: 'Registrar peso',
       icon: '⚖️',
       message: `Olá ${student.name}! ⚖️\n\nLembre-se de registrar seu peso hoje no app DenaVita.\n\nAcompanhar sua evolução é fundamental para o sucesso! 💪`,
+      pushTitle: 'Hora de registrar seu peso ⚖️',
+      pushBody: 'Acompanhar sua evolução é fundamental para atingir sua meta!',
     },
     {
       id: 'custom',
       label: 'Personalizada',
       icon: '✏️',
       message: '',
+      pushTitle: '',
+      pushBody: '',
     },
   ]
 
@@ -306,6 +318,8 @@ export default function StudentProfilePage({ params }: { params: Promise<{ id: s
     const tpl = notifyTemplates.find(t => t.id === templateId)
     setNotifyTemplate(templateId)
     setWhatsappMsg(tpl?.message ?? '')
+    setPushTitle(tpl?.pushTitle ?? '')
+    setPushBody(tpl?.pushBody ?? '')
     setNotifyOpen(true)
   }
 
@@ -355,6 +369,8 @@ export default function StudentProfilePage({ params }: { params: Promise<{ id: s
                 onClick={() => {
                   setNotifyTemplate(tpl.id)
                   setWhatsappMsg(tpl.message)
+                  setPushTitle(tpl.pushTitle)
+                  setPushBody(tpl.pushBody)
                 }}
                 className="flex items-center gap-2 px-3 py-2.5 rounded-xl border text-left transition-all"
                 style={{
@@ -407,27 +423,71 @@ export default function StudentProfilePage({ params }: { params: Promise<{ id: s
 
           {/* App notification section */}
           <div>
-            <div className="flex items-center gap-2 mb-2">
+            <div className="flex items-center gap-2 mb-3">
               <Bell size={15} style={{ color: '#C8FF00' }} />
               <span className="text-sm font-medium" style={{ color: '#FFFFFF' }}>Notificação no app</span>
             </div>
-            <div className="p-3 rounded-xl mb-3" style={{ background: '#222222' }}>
-              <p className="text-xs" style={{ color: '#888888' }}>
-                Envia uma notificação push diretamente ao celular do aluno pelo app DenaVita.
-              </p>
-              <p className="text-xs mt-1" style={{ color: '#555555' }}>
-                // TODO: conectar API de push notifications (Expo / FCM)
-              </p>
+
+            {/* Título */}
+            <div className="mb-3">
+              <label className="text-xs uppercase tracking-wide mb-1.5 block" style={{ color: '#555555' }}>Título</label>
+              <input
+                value={pushTitle}
+                onChange={e => setPushTitle(e.target.value)}
+                placeholder="Ex: Nova aula disponível! 🎥"
+                className="w-full px-3 py-2.5 rounded-xl border text-sm font-bold outline-none focus:ring-1 focus:ring-[#C8FF00]"
+                style={{ background: '#111111', color: '#FFFFFF', borderColor: '#2A2A2A', fontFamily: 'Poppins, sans-serif' }}
+              />
             </div>
+
+            {/* Descrição */}
+            <div className="mb-4">
+              <label className="text-xs uppercase tracking-wide mb-1.5 block" style={{ color: '#555555' }}>Descrição</label>
+              <textarea
+                value={pushBody}
+                onChange={e => setPushBody(e.target.value)}
+                placeholder="Ex: Acesse o app e confira o conteúdo novo do seu plano."
+                rows={3}
+                className="w-full px-3 py-2.5 rounded-xl border text-sm resize-none outline-none focus:ring-1 focus:ring-[#C8FF00] leading-relaxed"
+                style={{ background: '#111111', color: '#FFFFFF', borderColor: '#2A2A2A' }}
+              />
+            </div>
+
+            {/* Preview */}
+            {(pushTitle || pushBody) && (
+              <div className="mb-4 p-3 rounded-xl border" style={{ background: '#111111', borderColor: '#2A2A2A' }}>
+                <p className="text-xs mb-2" style={{ color: '#555555' }}>Prévia no celular</p>
+                <div className="flex items-start gap-2.5">
+                  <div className="w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: '#C8FF00' }}>
+                    <Bell size={14} style={{ color: '#111111' }} />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs font-bold leading-tight" style={{ color: '#FFFFFF', fontFamily: 'Poppins, sans-serif' }}>
+                      {pushTitle || 'Título da notificação'}
+                    </p>
+                    {pushBody && (
+                      <p className="text-xs mt-0.5 leading-snug" style={{ color: '#888888' }}>
+                        {pushBody}
+                      </p>
+                    )}
+                  </div>
+                </div>
+              </div>
+            )}
+
             <Button
               onClick={sendAppNotification}
               variant="outline"
               className="w-full font-semibold"
+              disabled={!pushTitle.trim()}
               style={{ borderColor: '#C8FF00', color: '#C8FF00', background: 'rgba(200,255,0,0.05)', borderRadius: '12px', fontFamily: 'Poppins, sans-serif' }}
             >
               <Bell size={15} className="mr-2" />
               Enviar notificação no app
             </Button>
+            {!pushTitle.trim() && (
+              <p className="text-xs mt-1.5 text-center" style={{ color: '#555555' }}>Preencha o título para enviar</p>
+            )}
           </div>
         </SheetContent>
       </Sheet>
@@ -488,12 +548,10 @@ export default function StudentProfilePage({ params }: { params: Promise<{ id: s
           ].map(t => (
             <TabsTrigger key={t.value} value={t.value}
               className="rounded-xl text-sm transition-all
-                data-[state=active]:bg-transparent
-                data-[state=active]:text-[#C8FF00]
-                data-[state=active]:font-semibold
-                data-[state=active]:ring-1
-                data-[state=active]:ring-[#C8FF00]
-                data-[state=inactive]:text-[#888888]"
+                data-[state=active]:bg-[#C8FF00]
+                data-[state=active]:text-black
+                data-[state=active]:font-bold
+                data-[state=active]:shadow-none"
               style={{ color: '#888888' }}>
               {t.label}
             </TabsTrigger>
