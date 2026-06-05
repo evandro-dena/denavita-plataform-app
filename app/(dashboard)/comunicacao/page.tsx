@@ -116,6 +116,8 @@ function CampaignEditor({ campaign, onClose, onSaved }: {
     push_body: '',
   })
 
+  const [selectedObjective, setSelectedObjective] = useState<string | null>(null)
+
   const save = useMutation<void, Error, void>({
     mutationFn: async () => {
       if (isNew) await campaignService.create(form)
@@ -288,15 +290,26 @@ function CampaignEditor({ campaign, onClose, onSaved }: {
           <label className="text-xs uppercase tracking-wide mb-2 block" style={{ color: '#555555' }}>Objetivo de envio (atalho)</label>
           <p className="text-xs mb-2" style={{ color: '#555555' }}>Clique para preencher a mensagem automaticamente</p>
           <div className="flex flex-wrap gap-2">
-            {QUICK_OBJECTIVES.map(obj => (
-              <button key={obj.label}
-                onClick={() => setForm(p => ({ ...p, whatsapp_message: obj.whatsapp, push_title: obj.pushTitle, push_body: obj.pushBody }))}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-xs transition-all hover:border-[#C8FF00] hover:text-[#C8FF00]"
-                style={{ background: '#1C1C1C', borderColor: '#3D3D3D', color: '#888888' }}>
-                <span>{obj.emoji}</span>
-                <span>{obj.label}</span>
-              </button>
-            ))}
+            {QUICK_OBJECTIVES.map(obj => {
+              const active = selectedObjective === obj.label
+              return (
+                <button key={obj.label}
+                  onClick={() => {
+                    setSelectedObjective(obj.label)
+                    setForm(p => ({ ...p, whatsapp_message: obj.whatsapp, push_title: obj.pushTitle, push_body: obj.pushBody }))
+                  }}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-xs font-medium transition-all"
+                  style={{
+                    background: active ? 'rgba(200,255,0,0.1)' : '#1C1C1C',
+                    borderColor: active ? '#C8FF00' : '#3D3D3D',
+                    color: active ? '#C8FF00' : '#888888',
+                  }}>
+                  <span>{obj.emoji}</span>
+                  <span>{obj.label}</span>
+                  {active && <CheckCircle size={11} className="ml-0.5" />}
+                </button>
+              )
+            })}
           </div>
         </div>
 
