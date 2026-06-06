@@ -73,25 +73,17 @@ export const studentService = {
   },
 
   async create(data: Partial<Student>): Promise<Student> {
-    const { data: created, error } = await supabase
-      .from('profiles')
-      .insert({
-        name: data.name,
-        email: data.email,
-        phone: data.phone,
-        birth_date: data.birth_date,
-        goal_label: data.goal_label,
-        current_weight: data.current_weight,
-        goal_weight: data.goal_weight,
-        nutritionist_id: data.nutritionist_id,
-        role: 'aluno',
-        status: 'ativo',
-        // id é gerado automaticamente pelo banco (uuid_generate_v4())
-      })
-      .select('*, subscriptions(*)')
-      .single()
-
-    if (error || !created) throw new Error(error?.message ?? 'Erro ao criar aluno')
+    // Usa API route com service role para contornar RLS
+    const res = await fetch('/api/students', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    })
+    if (!res.ok) {
+      const err = await res.json()
+      throw new Error(err.error ?? 'Erro ao criar aluno')
+    }
+    const created = await res.json()
     return mapProfile(created as Record<string, unknown>)
   },
 

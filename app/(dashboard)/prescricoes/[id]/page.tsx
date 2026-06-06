@@ -237,7 +237,10 @@ export default function EditPrescricaoPage({ params }: { params: Promise<{ id: s
   const { data: plan, isLoading } = useQuery({
     queryKey: ['diet-plan', id],
     queryFn: async () => {
-      const all = await mealPlanService.listAll('nutri-1')
+      const { createClient } = await import('@/lib/supabase/client')
+      const sb = createClient()
+      const { data: { user } } = await sb.auth.getUser()
+      const all = await mealPlanService.listAll(user?.id ?? '')
       return all.find(p => p.id === id) ?? null
     },
   })
