@@ -120,7 +120,7 @@ export const mealPlanService = {
       .from('diet_plans')
       .upsert({
         ...(planData.id ? { id: planData.id } : {}),
-        user_id: planData.user_id ?? '',
+        ...(planData.user_id ? { user_id: planData.user_id } : {}),
         created_by: planData.nutritionist_id,
         name: planData.name ?? 'Novo plano',
         type: planData.type ?? 'alimentos',

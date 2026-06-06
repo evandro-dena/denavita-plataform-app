@@ -3,6 +3,7 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { mealPlanService } from '@/lib/api/diet'
+import { useNutriId } from '@/lib/hooks/useNutriId'
 import { Button } from '@/components/ui/button'
 import { ArrowLeft, ArrowRight } from 'lucide-react'
 import Link from 'next/link'
@@ -24,14 +25,15 @@ export default function NovaPrescricaoPage() {
   const router = useRouter()
   const qc = useQueryClient()
   const [name, setName] = useState('')
+  const nutriId = useNutriId()
 
   const create = useMutation({
     mutationFn: () =>
       mealPlanService.upsertMealPlan({
         name,
         type: 'textos_livres',
-        user_id: '',
-        nutritionist_id: 'nutri-1',
+        user_id: nutriId ?? undefined,
+        nutritionist_id: nutriId ?? '',
         total_calories: 0, total_protein: 0, total_carbs: 0, total_fat: 0,
         meals: DEFAULT_MEALS(),
         source: 'manual',
