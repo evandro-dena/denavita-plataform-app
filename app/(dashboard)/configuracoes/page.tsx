@@ -6,22 +6,23 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
-import { Upload, FileText, Trash2, CheckCircle, Clock, Sparkles, X } from 'lucide-react'
+import { Upload, FileText, Trash2, CheckCircle, Clock, Sparkles } from 'lucide-react'
+import { useNutriId } from '@/lib/hooks/useNutriId'
 
 // ─── Types ────────────────────────────────────────────────────────
 interface RefFile {
   id: string
   name: string
-  filename: string
-  geminiUri: string | null
-  uploadedAt: string
-  expiresAt: string | null
+  file_path: string
+  gemini_uri: string | null
+  gemini_expires_at: string | null
+  created_at: string
 }
 
 // ─── Reference File Card ─────────────────────────────────────────
 function RefCard({ ref: r, onDelete }: { ref: RefFile; onDelete: () => void }) {
-  const isValid = r.geminiUri && r.expiresAt && new Date(r.expiresAt) > new Date()
-  const expires = r.expiresAt ? new Date(r.expiresAt) : null
+  const isValid = r.gemini_uri && r.gemini_expires_at && new Date(r.gemini_expires_at) > new Date()
+  const expires = r.gemini_expires_at ? new Date(r.gemini_expires_at) : null
 
   return (
     <div className="flex items-center gap-3 p-4 rounded-2xl border transition-all"
@@ -65,14 +66,15 @@ export default function ConfiguracoesPage() {
   const [uploading, setUploading] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const qc = useQueryClient()
+  const nutriId = useNutriId()
 
   const inputStyle = { background: '#262626', color: '#FFFFFF', borderRadius: '12px', borderColor: '#3D3D3D' }
 
-  // Fetch reference files
+  // Fetch reference files from Supabase via API
   const { data: refs = [], isLoading } = useQuery<RefFile[]>({
-    queryKey: ['ai-references'],
-    queryFn: () => fetch('/api/ai/references').then(r => r.json()),
-    enabled: activeTab === 'ia',
+    queryKey: ['ai-references', nutriId],
+    queryFn: () => fetch(`/api/ai/references?nutri_id=${nutriId}`).then(r => r.json()),
+    enabled: activeTab === 'ia' && !!nutriId,
   })
 
   const deleteRef = useMutation({
@@ -89,10 +91,12 @@ export default function ConfiguracoesPage() {
       toast.error('Apenas arquivos PDF são aceitos')
       return
     }
+    if (!nutriId) { toast.error('Aguarde carregar...'); return }
     setUploading(true)
     try {
       const fd = new FormData()
       fd.append('file', file)
+      fd.append('nutri_id', nutriId)
       const res = await fetch('/api/ai/upload-reference', { method: 'POST', body: fd })
       if (!res.ok) throw new Error(await res.text())
       qc.invalidateQueries({ queryKey: ['ai-references'] })

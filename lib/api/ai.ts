@@ -4,6 +4,7 @@ interface StudentContext {
   student: Student
   anamnesis: Anamnesis | null
   lastAssessment: Assessment | null
+  nutriId?: string
 }
 
 export const aiService = {
@@ -13,7 +14,7 @@ export const aiService = {
     const response = await fetch('/api/ai/generate-diet', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ prompt, context }),
+      body: JSON.stringify({ prompt, nutri_id: context.nutriId }),
     })
 
     if (!response.ok) throw new Error('Erro ao gerar plano com IA')
