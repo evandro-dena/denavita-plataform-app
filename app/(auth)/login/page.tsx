@@ -26,16 +26,25 @@ export default function LoginPage() {
   })
 
   const onSubmit = async (data: FormData) => {
-    void data
     setLoading(true)
     try {
-      // TODO: conectar Supabase Auth
-      // await supabase.auth.signInWithPassword({ email: data.email, password: data.password })
-      await new Promise(r => setTimeout(r, 800))
+      const { createClient } = await import('@/lib/supabase/client')
+      const supabase = createClient()
+      const { error } = await supabase.auth.signInWithPassword({
+        email: data.email,
+        password: data.password,
+      })
+      if (error) throw error
       toast.success('Login realizado com sucesso!')
       router.push('/dashboard')
-    } catch {
-      toast.error('E-mail ou senha incorretos')
+      router.refresh()
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : ''
+      if (msg.includes('Invalid login')) {
+        toast.error('E-mail ou senha incorretos')
+      } else {
+        toast.error('Erro ao fazer login. Tente novamente.')
+      }
     } finally {
       setLoading(false)
     }
