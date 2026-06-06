@@ -2,10 +2,12 @@
 import { use, useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { mealPlanService } from '@/lib/api/diet'
+import { useNutriId } from '@/lib/hooks/useNutriId'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
 import {
   ArrowLeft, Plus, Trash2, Copy, Save, AlignJustify, MessageSquare, ChevronDown, ChevronRight,
+  Sparkles, Send, X,
 } from 'lucide-react'
 import Link from 'next/link'
 import { toast } from 'sonner'
@@ -16,6 +18,10 @@ function Editor({ plan, onSave }: { plan: DietPlan; onSave: (p: Partial<DietPlan
   const [name, setName] = useState(plan.name)
   const [meals, setMeals] = useState<Meal[]>(plan.meals)
   const [expanded, setExpanded] = useState<Set<string>>(new Set())
+  const [aiOpen, setAiOpen] = useState(false)
+  const [aiPrompt, setAiPrompt] = useState('')
+  const [aiLoading, setAiLoading] = useState(false)
+  const nutriId = useNutriId()
   const [nutrients, setNutrients] = useState({
     kcal: String(plan.total_calories),
     protein: String(plan.total_protein),
@@ -56,6 +62,41 @@ function Editor({ plan, onSave }: { plan: DietPlan; onSave: (p: Partial<DietPlan
     setExpanded(prev => new Set([...prev, id]))
   }
 
+  const generateWithAI = async () => {
+    if (!aiPrompt.trim()) { toast.error('Escreva o que quer que a IA faça'); return }
+    setAiLoading(true)
+    try {
+      const prompt = `${aiPrompt}\n\nRetorne APENAS JSON válido no formato:\n{ "meals": [{ "id": "string", "name": "string", "time": "HH:MM", "emoji": "emoji", "substitution": "string", "free_text": "descrição completa da refeição em texto livre", "items": [] }], "total_calories": number, "total_protein": number, "total_carbs": number, "total_fat": number }`
+      const res = await fetch('/api/ai/generate-diet', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ prompt, nutri_id: nutriId }),
+      })
+      const data = await res.json()
+      if (data.plan?.meals) {
+        const newMeals = data.plan.meals.map((m: Meal) => ({ ...m, id: String(Date.now() + Math.random()) }))
+        setMeals(newMeals)
+        if (data.plan.total_calories) {
+          setNutrients({
+            kcal: String(data.plan.total_calories),
+            protein: String(data.plan.total_protein),
+            fat: String(data.plan.total_fat),
+            carbs: String(data.plan.total_carbs),
+          })
+        }
+        setAiOpen(false)
+        setAiPrompt('')
+        toast.success('Dieta gerada com sucesso! Revise antes de salvar.')
+      } else {
+        toast.error('IA não conseguiu gerar. Tente reformular o pedido.')
+      }
+    } catch {
+      toast.error('Erro ao conectar com a IA.')
+    } finally {
+      setAiLoading(false)
+    }
+  }
+
   return (
     <div className="flex flex-col gap-6">
       {/* Top actions */}
@@ -83,6 +124,68 @@ function Editor({ plan, onSave }: { plan: DietPlan; onSave: (p: Partial<DietPlan
           </Button>
         </div>
       </div>
+
+      {/* IA Shortcut */}
+      {!aiOpen ? (
+        <button
+          onClick={() => setAiOpen(true)}
+          className="flex items-center gap-3 px-4 py-3 rounded-2xl border w-full text-left transition-all hover:border-[#C8FF00] hover:bg-[rgba(200,255,0,0.04)] group"
+          style={{ background: '#262626', borderColor: '#3D3D3D' }}
+        >
+          <div className="w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: 'rgba(200,255,0,0.1)' }}>
+            <Sparkles size={15} style={{ color: '#C8FF00' }} />
+          </div>
+          <div className="flex-1">
+            <p className="text-sm font-semibold" style={{ color: '#C8FF00', fontFamily: 'Poppins, sans-serif' }}>Gerar com IA treinada</p>
+            <p className="text-xs" style={{ color: '#555555' }}>Descreva o que quer e a IA cria a dieta baseada nos seus 10 planos de referência</p>
+          </div>
+          <Send size={14} style={{ color: '#C8FF00' }} />
+        </button>
+      ) : (
+        <div className="rounded-2xl border p-4 flex flex-col gap-3" style={{ background: '#262626', borderColor: 'rgba(200,255,0,0.3)' }}>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Sparkles size={15} style={{ color: '#C8FF00' }} />
+              <p className="text-sm font-semibold" style={{ color: '#C8FF00', fontFamily: 'Poppins, sans-serif' }}>Gerar com IA treinada</p>
+            </div>
+            <button onClick={() => { setAiOpen(false); setAiPrompt('') }} className="p-1.5 rounded-lg hover:bg-white/10 transition-all">
+              <X size={14} style={{ color: '#555555' }} />
+            </button>
+          </div>
+          <textarea
+            value={aiPrompt}
+            onChange={e => setAiPrompt(e.target.value)}
+            autoFocus
+            rows={4}
+            placeholder={`Descreva o que quer. Ex:\n"Dieta para mulher de 70kg querendo perder peso, treina 4x por semana, não come glúten, prefere comida simples. Crie 5 refeições com substituições."`}
+            className="w-full px-3 py-2.5 rounded-xl border text-sm resize-none outline-none leading-relaxed focus:border-[#C8FF00] transition-colors"
+            style={{ background: '#1C1C1C', color: '#FFFFFF', borderColor: '#3D3D3D' }}
+          />
+          <div className="flex gap-2">
+            {[
+              'Dieta de emagrecimento com 5 refeições',
+              'Dieta para ganho de massa',
+              'Dieta low carb com substituições',
+              'Dieta para manutenção de peso',
+            ].map(s => (
+              <button key={s} onClick={() => setAiPrompt(s)}
+                className="text-xs px-2.5 py-1.5 rounded-xl border transition-all hover:border-[#C8FF00] hover:text-[#C8FF00]"
+                style={{ borderColor: '#3D3D3D', color: '#888888', background: '#1C1C1C' }}>
+                {s}
+              </button>
+            ))}
+          </div>
+          <Button
+            onClick={generateWithAI}
+            disabled={aiLoading || !aiPrompt.trim()}
+            className="w-full font-semibold"
+            style={{ background: '#C8FF00', color: '#1C1C1C', borderRadius: '12px', fontFamily: 'Poppins, sans-serif', fontWeight: 700 }}
+          >
+            <Sparkles size={14} className="mr-2" />
+            {aiLoading ? 'Gerando dieta...' : 'Gerar dieta com IA'}
+          </Button>
+        </div>
+      )}
 
       {/* Dieta section */}
       <div className="rounded-2xl border p-5" style={{ background: '#262626', borderColor: '#3D3D3D' }}>
