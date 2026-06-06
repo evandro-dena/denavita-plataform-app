@@ -1,4 +1,5 @@
 'use client'
+import { useNutriId } from '@/lib/hooks/useNutriId'
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { studentService, anamnesisService, assessmentService, examService, weightService, dietReviewService } from '@/lib/api/students'
@@ -24,7 +25,6 @@ import { toast } from 'sonner'
 import { Student } from '@/types'
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts'
 
-const NUTRI_ID = 'nutri-1'
 
 type PanelSection =
   | 'cadastro' | 'anamnese' | 'nutricao' | 'avaliacao'
@@ -249,7 +249,7 @@ function NutricaoPanel({ student }: { student: Student }) {
 
   const { data: allPlans = [], isLoading: loadingPlans } = useQuery({
     queryKey: ['diet-plans-all'],
-    queryFn: () => mealPlanService.listAll(NUTRI_ID),
+    queryFn: () => mealPlanService.listAll('nutri-1'),
   })
 
   const { data: activePlanId, isLoading: loadingActive } = useQuery({
@@ -792,6 +792,7 @@ function SidePanel({ student, section, onClose, onSectionChange }: {
 
 // ─── Main Page ────────────────────────────────────────────────────
 export default function AlunosPage() {
+  const NUTRI_ID = useNutriId()
   const [tab, setTab] = useState<'ativo' | 'espera' | 'excluido'>('ativo')
   const [search, setSearch] = useState('')
   const [selected, setSelected] = useState<{ student: Student; section: PanelSection } | null>(null)
@@ -799,12 +800,12 @@ export default function AlunosPage() {
 
   const { data: students = [], isLoading } = useQuery({
     queryKey: ['students', NUTRI_ID],
-    queryFn: () => studentService.list(NUTRI_ID),
+    queryFn: () => studentService.list(NUTRI_ID ?? ''),
   })
 
   const { data: needsDietReview = [] } = useQuery({
     queryKey: ['needs-diet-review', NUTRI_ID],
-    queryFn: () => dietReviewService.getNeedingReview(NUTRI_ID),
+    queryFn: () => dietReviewService.getNeedingReview(NUTRI_ID ?? ''),
   })
 
   const { data: pendingPlanMap = {} } = useQuery({

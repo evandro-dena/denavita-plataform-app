@@ -1,4 +1,5 @@
 'use client'
+import { useNutriId } from '@/lib/hooks/useNutriId'
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { mealPlanService } from '@/lib/api/diet'
@@ -14,19 +15,19 @@ import Link from 'next/link'
 import { toast } from 'sonner'
 import { DietPlan } from '@/types'
 
-const NUTRI_ID = 'nutri-1'
 
 function typeLabel(type: DietPlan['type']) {
   return type === 'textos_livres' ? 'Textos livres' : 'Por alimentos'
 }
 
 export default function PrescricoesPage() {
+  const NUTRI_ID = useNutriId()
   const qc = useQueryClient()
   const [search, setSearch] = useState('')
 
   const { data: plans = [], isLoading } = useQuery({
     queryKey: ['diet-plans-all'],
-    queryFn: () => mealPlanService.listAll(NUTRI_ID),
+    queryFn: () => mealPlanService.listAll(NUTRI_ID ?? ''),
   })
 
   const deletePlan = useMutation({

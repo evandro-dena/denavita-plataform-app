@@ -1,4 +1,5 @@
 'use client'
+import { useNutriId } from '@/lib/hooks/useNutriId'
 import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { dashboardService } from '@/lib/api/dashboard'
@@ -14,7 +15,6 @@ import Link from 'next/link'
 import { toast } from 'sonner'
 import { Student } from '@/types'
 
-const NUTRI_ID = 'nutri-1'
 
 // ─── Contact Sheet ────────────────────────────────────────────────
 
@@ -337,21 +337,22 @@ function StatCard({ label, value, icon: Icon, accent = false, warning = false }:
 // ─── Page ────────────────────────────────────────────────────────
 
 export default function DashboardPage() {
+  const NUTRI_ID = useNutriId()
   const [selected, setSelected] = useState<{ student: Student; context: 'vencimento' | 'dieta' } | null>(null)
 
   const { data: stats, isLoading } = useQuery({
     queryKey: ['dashboard-stats', NUTRI_ID],
-    queryFn: () => dashboardService.getStats(NUTRI_ID),
+    queryFn: () => dashboardService.getStats(NUTRI_ID ?? ''),
   })
 
   const { data: students } = useQuery({
     queryKey: ['students', NUTRI_ID],
-    queryFn: () => studentService.list(NUTRI_ID),
+    queryFn: () => studentService.list(NUTRI_ID ?? ''),
   })
 
   const { data: needsDietReview = [] } = useQuery({
     queryKey: ['needs-diet-review', NUTRI_ID],
-    queryFn: () => dietReviewService.getNeedingReview(NUTRI_ID),
+    queryFn: () => dietReviewService.getNeedingReview(NUTRI_ID ?? ''),
   })
 
   const { data: pendingPlanMap = {} } = useQuery({
