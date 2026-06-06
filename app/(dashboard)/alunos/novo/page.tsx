@@ -3,6 +3,7 @@ import { useRouter } from 'next/navigation'
 import { useForm, SubmitHandler } from 'react-hook-form'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { studentService } from '@/lib/api/students'
+import { useNutriId } from '@/lib/hooks/useNutriId'
 import Topbar from '@/components/layout/Topbar'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -31,13 +32,14 @@ const GOALS = ['Perder gordura', 'Ganhar massa muscular', 'Manter peso', 'Melhor
 export default function NovoAlunoPage() {
   const router = useRouter()
   const qc = useQueryClient()
+  const nutriId = useNutriId()
 
   const { register, handleSubmit, setValue, formState: { errors } } = useForm<FormData>()
 
   const create = useMutation({
     mutationFn: (data: FormData) => studentService.create({
       ...data,
-      nutritionist_id: 'nutri-1',
+      nutritionist_id: nutriId ?? '',
       current_weight: data.current_weight ? parseFloat(data.current_weight) : undefined,
       goal_weight: data.goal_weight ? parseFloat(data.goal_weight) : undefined,
     }),

@@ -86,6 +86,7 @@ export const studentService = {
         nutritionist_id: data.nutritionist_id,
         role: 'aluno',
         status: 'ativo',
+        // id é gerado automaticamente pelo banco (uuid_generate_v4())
       })
       .select('*, subscriptions(*)')
       .single()
