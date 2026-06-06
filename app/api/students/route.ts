@@ -31,6 +31,10 @@ export async function POST(req: NextRequest) {
 
     if (error) {
       console.error('[POST /api/students] DB error:', error)
+      // Erro de email duplicado
+      if (error.message.includes('duplicate') || error.message.includes('unique')) {
+        return NextResponse.json({ error: 'Este e-mail já está cadastrado na plataforma.' }, { status: 400 })
+      }
       return NextResponse.json({ error: error.message }, { status: 400 })
     }
     return NextResponse.json(created)
