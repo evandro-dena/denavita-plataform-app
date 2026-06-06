@@ -124,7 +124,7 @@ export const mealPlanService = {
         created_by: planData.nutritionist_id,
         name: planData.name ?? 'Novo plano',
         type: planData.type ?? 'alimentos',
-        source: planData.source ?? 'manual',
+        source: planData.source === 'manual' ? 'nutricionista' : (planData.source ?? 'nutricionista'),
         total_calories: planData.total_calories ?? 0,
         total_protein: planData.total_protein ?? 0,
         total_carbs: planData.total_carbs ?? 0,
