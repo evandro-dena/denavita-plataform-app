@@ -246,10 +246,12 @@ function AnamnesePanel({ studentId }: { studentId: string }) {
 function NutricaoPanel({ student }: { student: Student }) {
   const qc = useQueryClient()
   const [search, setSearch] = useState('')
+  const nutriId = useNutriId()
 
   const { data: allPlans = [], isLoading: loadingPlans } = useQuery({
-    queryKey: ['diet-plans-all'],
-    queryFn: () => mealPlanService.listAll('nutri-1'),
+    queryKey: ['diet-plans-all', nutriId],
+    queryFn: () => nutriId ? mealPlanService.listAll(nutriId) : Promise.resolve([]),
+    enabled: !!nutriId,
   })
 
   const { data: activePlanId, isLoading: loadingActive } = useQuery({
@@ -968,7 +970,7 @@ export default function AlunosPage() {
                                 color: hasDiet ? '#C8FF00' : '#F59E0B',
                                 border: 'none', borderRadius: '9999px', fontSize: '11px',
                               }}>
-                                {hasDiet ? '✓ Gerada' : 'Aguardando'}
+                                {hasDiet ? '✓ Gerada' : 'Aguardando verificação'}
                               </Badge>
                             </td>
                           </>
