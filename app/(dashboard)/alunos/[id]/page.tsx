@@ -3,6 +3,7 @@ import { use, useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { studentService, anamnesisService, assessmentService, examService, weightService } from '@/lib/api/students'
 import { mealPlanService } from '@/lib/api/diet'
+import { calcularIdade, formatarData, traduzirCampo, traduzirBooleano, traduzirCondicional } from '@/constants/anamnesisLabels'
 import Topbar from '@/components/layout/Topbar'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Button } from '@/components/ui/button'
@@ -266,6 +267,8 @@ export default function StudentProfilePage({ params }: { params: Promise<{ id: s
   }))
 
   const anamnesisData = anamnesis
+  // Idade derivada de data_nascimento (coluna gravada pelo app); idade legada não é mais usada
+  const idadeAnamnese = calcularIdade(anamnesisData?.data_nascimento)
 
   const expiresDate = student.subscription?.expires_at
     ? new Date(student.subscription.expires_at).toLocaleDateString('pt-BR')
@@ -581,22 +584,23 @@ export default function StudentProfilePage({ params }: { params: Promise<{ id: s
           ) : (
             <div className="grid grid-cols-2 gap-4">
               {[
-                ['Sexo', anamnesisData.sexo],
-                ['Idade', `${anamnesisData.idade} anos`],
+                ['Sexo', traduzirCampo('sexo', anamnesisData.sexo)],
+                ['Data de nascimento', formatarData(anamnesisData.data_nascimento)],
+                ['Idade', idadeAnamnese != null ? `${idadeAnamnese} anos` : '—'],
                 ['Peso', `${anamnesisData.peso} kg`],
                 ['Altura', `${anamnesisData.altura} cm`],
-                ['Objetivo', anamnesisData.objetivo],
-                ['Tempo de treino', anamnesisData.tempo_treino],
-                ['Frequência', anamnesisData.frequencia_treino],
-                ['Come no trabalho', anamnesisData.come_no_trabalho ? 'Sim' : 'Não'],
-                ['Suplementação', anamnesisData.condicao_suplemento],
-                ['Suplementos', anamnesisData.suplementos_atuais?.join(', ')],
-                ['Alergias', anamnesisData.alergias?.join(', ') || 'Nenhuma'],
-                ['Doença crônica', anamnesisData.doenca_cronica?.tem ? `Sim — ${anamnesisData.doenca_cronica.qual}` : 'Não'],
-                ['Medicamento', anamnesisData.medicamento?.usa ? `Sim — ${anamnesisData.medicamento.qual}` : 'Não'],
-                ['Histórico de lesão', anamnesisData.historico_lesao?.tem ? `Sim — ${anamnesisData.historico_lesao.quais}` : 'Não'],
-                ['Período de fome', anamnesisData.periodo_fome],
-                ['Preferência alimentar', anamnesisData.preferencia_alimentar],
+                ['Objetivo', traduzirCampo('objetivo', anamnesisData.objetivo)],
+                ['Tempo de treino', traduzirCampo('tempo_treino', anamnesisData.tempo_treino)],
+                ['Frequência', traduzirCampo('frequencia_treino', anamnesisData.frequencia_treino)],
+                ['Come no trabalho', traduzirBooleano(anamnesisData.come_no_trabalho)],
+                ['Suplementação', traduzirCampo('condicao_suplemento', anamnesisData.condicao_suplemento)],
+                ['Suplementos', traduzirCampo('suplementos_atuais', anamnesisData.suplementos_atuais)],
+                ['Alergias', traduzirCampo('alergias', anamnesisData.alergias)],
+                ['Doença crônica', traduzirCondicional(anamnesisData.doenca_cronica)],
+                ['Medicamento', traduzirCondicional(anamnesisData.medicamento)],
+                ['Histórico de lesão', traduzirCondicional(anamnesisData.historico_lesao)],
+                ['Período de fome', traduzirCampo('periodo_fome', anamnesisData.periodo_fome)],
+                ['Preferência alimentar', traduzirCampo('preferencia_alimentar', anamnesisData.preferencia_alimentar)],
               ].map(([label, value]) => (
                 <div key={label} className="rounded-2xl border p-4" style={{ background: '#262626', borderColor: '#3D3D3D' }}>
                   <InfoRow label={label as string} value={value as string} />

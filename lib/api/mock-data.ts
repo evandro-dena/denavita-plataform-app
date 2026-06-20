@@ -35,7 +35,7 @@ export const MOCK_STUDENTS: Student[] = [
 
 export const MOCK_ANAMNESIS: Record<string, Anamnesis> = {
   '1': {
-    id: 'a1', user_id: '1', sexo: 'feminino', idade: 29, peso: 72, altura: 165,
+    id: 'a1', user_id: '1', sexo: 'feminino', data_nascimento: '1996-11-22', idade: 29, peso: 72, altura: 165,
     objetivo: 'perder_gordura', tempo_treino: '1_3a', frequencia_treino: '4x',
     horarios: { acordar: '07:00', treino: '18:00', refeicoes: [{ nome: 'Café da manhã', horario: '08:00' }, { nome: 'Almoço', horario: '12:30' }, { nome: 'Jantar', horario: '20:00' }] },
     refeicoes: ['cafe_manha', 'almoco', 'lanche_tarde', 'jantar'],
@@ -47,7 +47,7 @@ export const MOCK_ANAMNESIS: Record<string, Anamnesis> = {
     created_at: '2024-01-10T10:00:00Z'
   },
   '2': {
-    id: 'a2', user_id: '2', sexo: 'masculino', idade: 32, peso: 78, altura: 178,
+    id: 'a2', user_id: '2', sexo: 'masculino', data_nascimento: '1993-07-22', idade: 32, peso: 78, altura: 178,
     objetivo: 'ganhar_massa', tempo_treino: '1_3a', frequencia_treino: '5x',
     horarios: { acordar: '06:00', treino: '07:00', refeicoes: [{ nome: 'Café da manhã', horario: '06:30' }, { nome: 'Almoço', horario: '12:00' }, { nome: 'Pós-treino', horario: '08:30' }, { nome: 'Jantar', horario: '19:00' }] },
     refeicoes: ['cafe_manha', 'almoco', 'pos_treino', 'jantar', 'ceia'],
@@ -59,7 +59,7 @@ export const MOCK_ANAMNESIS: Record<string, Anamnesis> = {
     created_at: '2024-02-05T10:00:00Z'
   },
   '3': {
-    id: 'a3', user_id: '3', sexo: 'feminino', idade: 26, peso: 65, altura: 162,
+    id: 'a3', user_id: '3', sexo: 'feminino', data_nascimento: '2000-01-08', idade: 26, peso: 65, altura: 162,
     objetivo: 'saude', tempo_treino: 'menos_6m', frequencia_treino: '3x',
     horarios: { acordar: '08:00', treino: '19:00', refeicoes: [{ nome: 'Café da manhã', horario: '08:30' }, { nome: 'Almoço', horario: '13:00' }, { nome: 'Jantar', horario: '20:00' }] },
     refeicoes: ['cafe_manha', 'lanche_manha', 'almoco', 'jantar'],

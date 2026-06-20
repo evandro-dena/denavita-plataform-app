@@ -24,7 +24,8 @@ export interface Anamnesis {
   id: string
   user_id: string
   sexo: string
-  idade: number
+  data_nascimento?: string // 'YYYY-MM-DD' — fonte da idade (gravada pelo app)
+  idade?: number // legado: o app não grava mais; idade é derivada de data_nascimento
   peso: number
   altura: number
   objetivo: string

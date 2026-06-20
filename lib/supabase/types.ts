@@ -27,6 +27,7 @@ export type Tables = {
       id: string
       user_id: string
       sexo: string | null
+      data_nascimento: string | null
       idade: number | null
       peso: number | null
       altura: number | null
