@@ -135,6 +135,17 @@ export const dietReviewService = {
     await supabase.from('profiles').update({ status: 'ativo' }).eq('id', userId)
   },
 
+  // Liberação transacional via rota/RPC: ativa o plano pendente (active_plans),
+  // limpa o pendente e marca o aluno como ativo — atômico. Substitui o antigo
+  // updateStatus + markAsReviewed, que NÃO ativava o plano (bug latente).
+  async release(studentId: string): Promise<void> {
+    const res = await fetch(`/api/students/${studentId}/release`, { method: 'POST' })
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}))
+      throw new Error(err.error ?? 'Erro ao liberar aluno')
+    }
+  },
+
   async getPendingPlanMap(): Promise<Record<string, string>> {
     const { data, error } = await supabase
       .from('pending_review_plans')

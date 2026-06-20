@@ -824,10 +824,7 @@ export default function AlunosPage() {
   })
 
   const releaseStudent = useMutation({
-    mutationFn: async (id: string) => {
-      await studentService.updateStatus(id, 'ativo')
-      await dietReviewService.markAsReviewed(id)
-    },
+    mutationFn: (id: string) => dietReviewService.release(id),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['students'] })
       qc.invalidateQueries({ queryKey: ['needs-diet-review'] })
