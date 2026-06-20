@@ -1,0 +1,10 @@
+# Config do Supabase CLI. project_id costuma ser o nome do projeto local.
+# Para deploy/link use: `supabase link --project-ref <REF_DO_PROJETO>`
+project_id = "denavita-plataform-app"
+
+# ─── Edge Function: geração automática de dieta (Fase E) ─────────────
+# verify_jwt = false: a função é acionada pelo trigger do banco (Database
+# Webhook / pg_net), que NÃO carrega um JWT de usuário. Em vez do JWT, a
+# própria função valida um segredo compartilhado (EDGE_SHARED_SECRET).
+[functions.generate-diet]
+verify_jwt = false
