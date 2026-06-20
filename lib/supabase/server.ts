@@ -1,6 +1,6 @@
 import { createServerClient } from '@supabase/ssr'
 import { createClient } from '@supabase/supabase-js'
-import { cookies } from 'next/headers'
+import { cookies, headers } from 'next/headers'
 import type { User } from '@supabase/supabase-js'
 
 // Cliente ligado aos cookies da requisição (anon key → respeita RLS).
@@ -45,10 +45,26 @@ export function createServiceClient() {
 // Retorna o usuário autenticado da sessão (JWT validado no servidor de Auth)
 // ou null se não houver sessão válida. auth.getUser() valida o token no
 // servidor — não confiar em getSession()/cookie decodificado.
+//
+// 1. Cookie (web same-origin) — painel do nutricionista.
+// 2. Fallback Authorization: Bearer <token> — app nativo / outra origem.
 export async function getSessionUser(): Promise<User | null> {
-  const supabase = await createSessionClient()
+  // 1. Cookie (web same-origin) — comportamento atual
+  const cookieClient = await createSessionClient()
   const {
     data: { user },
-  } = await supabase.auth.getUser()
-  return user ?? null
+  } = await cookieClient.auth.getUser()
+  if (user) return user
+
+  // 2. Fallback Bearer (app nativo / outra origem)
+  const auth = (await headers()).get('authorization')
+  if (auth?.startsWith('Bearer ')) {
+    const token = auth.slice(7)
+    const {
+      data: { user: bearerUser },
+    } = await createServiceClient().auth.getUser(token)
+    return bearerUser ?? null
+  }
+
+  return null
 }
