@@ -1,7 +1,7 @@
 import { DietPlan, Student, Anamnesis, Assessment } from '@/types'
 import { calcularIdade, traduzirCampo } from '@/constants/anamnesisLabels'
 
-interface StudentContext {
+export interface StudentContext {
   student: Student
   anamnesis: Anamnesis | null
   lastAssessment: Assessment | null
@@ -24,7 +24,7 @@ export const aiService = {
   },
 }
 
-function buildPrompt({ student, anamnesis, lastAssessment }: StudentContext): string {
+export function buildPrompt({ student, anamnesis, lastAssessment }: StudentContext): string {
   // Idade real derivada de data_nascimento (coluna gravada pelo app)
   const idade = calcularIdade(anamnesis?.data_nascimento)
 
