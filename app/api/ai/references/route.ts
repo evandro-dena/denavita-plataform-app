@@ -1,19 +1,19 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@supabase/supabase-js'
+import { createServiceClient, getSessionUser } from '@/lib/supabase/server'
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-)
+export async function GET() {
+  // 1. Exige sessão válida
+  const user = await getSessionUser()
+  if (!user) {
+    return NextResponse.json({ error: 'Não autenticado' }, { status: 401 })
+  }
 
-export async function GET(req: NextRequest) {
-  const nutriId = req.nextUrl.searchParams.get('nutri_id')
-  if (!nutriId) return NextResponse.json([])
-
+  // 2. Escopo derivado da sessão — ignora qualquer nutri_id da query.
+  const supabase = createServiceClient()
   const { data, error } = await supabase
     .from('ai_references')
     .select('*')
-    .eq('nutri_id', nutriId)
+    .eq('nutri_id', user.id)
     .order('created_at', { ascending: false })
 
   if (error) return NextResponse.json([], { status: 500 })
@@ -21,16 +21,31 @@ export async function GET(req: NextRequest) {
 }
 
 export async function DELETE(req: NextRequest) {
-  const { id } = await req.json()
+  // 1. Exige sessão válida
+  const user = await getSessionUser()
+  if (!user) {
+    return NextResponse.json({ error: 'Não autenticado' }, { status: 401 })
+  }
 
-  // Busca o file_path para deletar do Storage
+  const { id } = await req.json()
+  if (!id) return NextResponse.json({ error: 'id obrigatório' }, { status: 400 })
+
+  const supabase = createServiceClient()
+
+  // 2. Carrega o recurso e confirma que pertence ao usuário da sessão.
   const { data: ref } = await supabase
     .from('ai_references')
-    .select('file_path')
+    .select('nutri_id, file_path')
     .eq('id', id)
     .single()
 
-  if (ref?.file_path) {
+  if (!ref) return NextResponse.json({ error: 'Referência não encontrada' }, { status: 404 })
+  if (ref.nutri_id !== user.id) {
+    return NextResponse.json({ error: 'Acesso negado' }, { status: 403 })
+  }
+
+  // 3. Só agora executa as operações privilegiadas.
+  if (ref.file_path) {
     await supabase.storage.from('ai-references').remove([ref.file_path])
   }
 

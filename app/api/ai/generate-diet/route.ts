@@ -1,17 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { GoogleGenAI } from '@google/genai'
-import { createClient } from '@supabase/supabase-js'
+import { createServiceClient, getSessionUser } from '@/lib/supabase/server'
 
 const gemini = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY })
-
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-)
 
 async function getValidUris(nutriId?: string): Promise<string[]> {
   if (!nutriId) return []
 
+  const supabase = createServiceClient()
   const { data: refs } = await supabase
     .from('ai_references')
     .select('*')
@@ -64,9 +60,17 @@ async function getValidUris(nutriId?: string): Promise<string[]> {
 
 export async function POST(req: NextRequest) {
   try {
-    const { prompt, nutri_id } = await req.json()
+    // 1. Exige sessão válida
+    const user = await getSessionUser()
+    if (!user) {
+      return NextResponse.json({ error: 'Não autenticado' }, { status: 401 })
+    }
 
-    const referenceUris = await getValidUris(nutri_id)
+    const { prompt } = await req.json()
+
+    // 2. As referências usadas são SEMPRE as do usuário da sessão —
+    //    ignora qualquer nutri_id vindo do body.
+    const referenceUris = await getValidUris(user.id)
 
     const contents: object[] = []
 
