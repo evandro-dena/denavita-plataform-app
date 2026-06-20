@@ -33,11 +33,13 @@ export async function DELETE(req: NextRequest) {
   const supabase = createServiceClient()
 
   // 2. Carrega o recurso e confirma que pertence ao usuário da sessão.
+  //    maybeSingle(): 0 linhas → { data: null, error: null } (404 limpo),
+  //    sem gerar o erro PGRST116/406 que o .single() produziria.
   const { data: ref } = await supabase
     .from('ai_references')
     .select('nutri_id, file_path')
     .eq('id', id)
-    .single()
+    .maybeSingle()
 
   if (!ref) return NextResponse.json({ error: 'Referência não encontrada' }, { status: 404 })
   if (ref.nutri_id !== user.id) {
