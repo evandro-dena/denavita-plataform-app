@@ -36,13 +36,22 @@ interface AIPlan {
  * - type   = 'alimentos' (único valor válido junto de 'textos_livres' no CHECK)
  * - created_by = nutritionist_id (aparece no listAll do nutricionista)
  *
- * NÃO marca pendente (pending_review_plans) nem ativa (active_plans) — isso é
- * das fases C e D. Aqui só gera e grava o plano.
+ * Marca como PENDENTE (pending_review_plans) ao final, com guard gera-uma-vez.
+ * NÃO ativa (active_plans) — isso é da Fase D (liberação pelo nutricionista).
  */
 export async function generateDietForStudent(
   { studentId, nutritionistId }: { studentId: string; nutritionistId: string },
   supabase: ServiceClient,
 ): Promise<{ planId: string }> {
+  // 0. Guard gera-uma-vez: se já há plano pendente p/ esse aluno, não regenera
+  //    (evita duplicar diet_plans a cada reenvio de anamnese).
+  const { data: pendente } = await supabase
+    .from('pending_review_plans')
+    .select('plan_id')
+    .eq('student_id', studentId)
+    .maybeSingle()
+  if (pendente?.plan_id) return { planId: pendente.plan_id as string }
+
   // 1. Contexto do banco (service role)
   const { data: profile } = await supabase
     .from('profiles')
@@ -138,6 +147,12 @@ export async function generateDietForStudent(
       )
     }
   }
+
+  // 5. Marca como PENDENTE de revisão — aluno aparece com "Gerada" na lista de
+  //    espera e o botão "Liberar" acende. PK = student_id → upsert dedupa.
+  await supabase
+    .from('pending_review_plans')
+    .upsert({ student_id: studentId, plan_id: planId })
 
   return { planId }
 }
