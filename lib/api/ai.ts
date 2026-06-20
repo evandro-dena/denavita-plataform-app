@@ -1,5 +1,5 @@
 import { DietPlan, Student, Anamnesis, Assessment } from '@/types'
-import { calcularIdade } from '@/constants/anamnesisLabels'
+import { calcularIdade, traduzirCampo } from '@/constants/anamnesisLabels'
 
 interface StudentContext {
   student: Student
@@ -25,21 +25,47 @@ export const aiService = {
 }
 
 function buildPrompt({ student, anamnesis, lastAssessment }: StudentContext): string {
+  // Idade real derivada de data_nascimento (coluna gravada pelo app)
+  const idade = calcularIdade(anamnesis?.data_nascimento)
+
+  // Objetivo: traduz o código; cai para o goal_label do perfil se a anamnese não tiver
+  const objetivo = anamnesis?.objetivo
+    ? traduzirCampo('objetivo', anamnesis.objetivo)
+    : (student.goal_label ?? 'não informado')
+
+  // Peso/altura com fallback para não imprimir "undefined kg/cm"
+  const peso = anamnesis?.peso ?? student.current_weight
+  const pesoStr = peso != null ? `${peso}kg` : 'não informado'
+  const alturaStr = anamnesis?.altura != null ? `${anamnesis.altura}cm` : 'não informada'
+
+  // Refeições: lista os nomes traduzidos em vez da contagem
+  const refeicoes = anamnesis?.refeicoes?.length
+    ? traduzirCampo('refeicoes', anamnesis.refeicoes)
+    : 'não informado'
+
+  // Alergias/suplementos: traduz os códigos do array e concatena o texto livre "Outro?"
+  const alergiasBase = anamnesis?.alergias?.length ? traduzirCampo('alergias', anamnesis.alergias) : ''
+  const alergias = [alergiasBase, anamnesis?.alergia_outra?.trim()].filter(Boolean).join(', ') || 'nenhuma'
+
+  const supBase = anamnesis?.suplementos_atuais?.length ? traduzirCampo('suplementos_atuais', anamnesis.suplementos_atuais) : ''
+  const suplementos = [supBase, anamnesis?.suplemento_outro?.trim()].filter(Boolean).join(', ') || 'nenhum'
+
   const lines: string[] = [
     `Gere um plano alimentar personalizado para o seguinte aluno. Responda SOMENTE com JSON válido, sem texto adicional.`,
     ``,
     `DADOS DO ALUNO:`,
     `Nome: ${student.name}`,
-    `Objetivo: ${anamnesis?.objetivo ?? student.goal_label}`,
-    `Peso atual: ${anamnesis?.peso ?? student.current_weight}kg`,
-    `Altura: ${anamnesis?.altura}cm`,
-    `Idade: ${calcularIdade(anamnesis?.data_nascimento) ?? 'não informada'} anos`,
-    `Sexo: ${anamnesis?.sexo}`,
-    `Frequência de treino: ${anamnesis?.frequencia_treino} por semana`,
-    `Refeições por dia: ${anamnesis?.refeicoes?.length ?? 'não informado'}`,
-    `Alergias: ${anamnesis?.alergias?.join(', ') || 'nenhuma'}`,
-    `Suplementos: ${anamnesis?.suplementos_atuais?.join(', ') || 'nenhum'}`,
-    `Preferência alimentar: ${anamnesis?.preferencia_alimentar}`,
+    `Objetivo: ${objetivo}`,
+    `Peso atual: ${pesoStr}`,
+    `Altura: ${alturaStr}`,
+    `Idade: ${idade ?? 'não informada'} anos`,
+    `Sexo: ${traduzirCampo('sexo', anamnesis?.sexo)}`,
+    `Tempo de treino: ${traduzirCampo('tempo_treino', anamnesis?.tempo_treino)}`,
+    `Frequência de treino: ${traduzirCampo('frequencia_treino', anamnesis?.frequencia_treino)}`,
+    `Refeições por dia: ${refeicoes}`,
+    `Alergias: ${alergias}`,
+    `Suplementos: ${suplementos}`,
+    `Preferência alimentar: ${traduzirCampo('preferencia_alimentar', anamnesis?.preferencia_alimentar)}`,
     `Descrição da alimentação atual: ${anamnesis?.alimentacao_atual}`,
   ]
 

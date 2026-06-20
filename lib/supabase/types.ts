@@ -39,7 +39,9 @@ export type Tables = {
       come_no_trabalho: boolean | null
       condicao_suplemento: string | null
       suplementos_atuais: string[] | null
+      suplemento_outro: string | null
       alergias: string[] | null
+      alergia_outra: string | null
       doenca_cronica: Record<string, unknown> | null
       medicamento: Record<string, unknown> | null
       historico_lesao: Record<string, unknown> | null

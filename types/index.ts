@@ -36,7 +36,9 @@ export interface Anamnesis {
   come_no_trabalho: boolean
   condicao_suplemento: string
   suplementos_atuais: string[]
+  suplemento_outro?: string // texto livre do "Outro?" de suplementos
   alergias: string[]
+  alergia_outra?: string // texto livre do "Outra?" de alergias
   doenca_cronica: { tem: boolean; qual?: string }
   medicamento: { usa: boolean; qual?: string }
   historico_lesao: { tem: boolean; quais?: string }
