@@ -1,4 +1,5 @@
 import { DietPlan, Student, Anamnesis, Assessment } from '@/types'
+import { calcularIdade } from '@/constants/anamnesisLabels'
 
 interface StudentContext {
   student: Student
@@ -32,7 +33,7 @@ function buildPrompt({ student, anamnesis, lastAssessment }: StudentContext): st
     `Objetivo: ${anamnesis?.objetivo ?? student.goal_label}`,
     `Peso atual: ${anamnesis?.peso ?? student.current_weight}kg`,
     `Altura: ${anamnesis?.altura}cm`,
-    `Idade: ${anamnesis?.idade} anos`,
+    `Idade: ${calcularIdade(anamnesis?.data_nascimento) ?? 'não informada'} anos`,
     `Sexo: ${anamnesis?.sexo}`,
     `Frequência de treino: ${anamnesis?.frequencia_treino} por semana`,
     `Refeições por dia: ${anamnesis?.refeicoes?.length ?? 'não informado'}`,
