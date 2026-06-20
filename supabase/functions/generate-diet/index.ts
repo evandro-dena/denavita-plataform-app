@@ -5,25 +5,20 @@
 // / pg_net. A rota Vercel /api/ai/students/[id]/generate-diet permanece como
 // fonte do fluxo MANUAL (nutricionista clica "Gerar").
 //
-// FASE E1 (este arquivo): apenas ESQUELETO. Validamos o segredo compartilhado,
-// conferimos que os secrets necessários existem, parseamos o payload do webhook
-// e fazemos um roundtrip real no banco (service role) p/ derivar o nutricionista
-// do aluno — exatamente a pré-condição da geração. NÃO geramos a dieta ainda.
-// A geração real (porte de generate-and-persist.ts) + medição de wall-clock
-// entram na Fase E2.
+// FASE E2: gera de fato a dieta (porte de generate-and-persist.ts) e MEDE o
+// wall-clock da geração, devolvido no JSON p/ comparar com o limite do Edge.
 // =====================================================================
 
-import { createClient } from 'jsr:@supabase/supabase-js@2'
+import { createClient, type SupabaseClient } from 'jsr:@supabase/supabase-js@2'
+import { generateDietForStudent } from '../_shared/generate.ts'
 
-// Secrets auto-injetados pelo runtime do Supabase em funções deployadas
-// (e também no `supabase functions serve` local).
+// Secrets auto-injetados pelo runtime do Supabase em funções deployadas.
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL') ?? ''
 const SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
 // Secrets custom — setar via `supabase secrets set` (prod) ou --env-file (local).
 const EDGE_SHARED_SECRET = Deno.env.get('EDGE_SHARED_SECRET') ?? ''
 const GEMINI_API_KEY = Deno.env.get('GEMINI_API_KEY') ?? ''
 
-// Payload de um Database Webhook do Supabase (INSERT/UPDATE/DELETE).
 interface WebhookPayload {
   type: 'INSERT' | 'UPDATE' | 'DELETE'
   table: string
@@ -44,9 +39,7 @@ Deno.serve(async (req) => {
     return json({ error: 'Method not allowed' }, 405)
   }
 
-  // 1. Autentica o chamador. Como verify_jwt=false, qualquer um alcançaria a
-  //    função; o trigger prova que é ele enviando o segredo compartilhado
-  //    (header x-edge-secret OU Authorization: Bearer <segredo>).
+  // 1. Autentica o chamador (segredo compartilhado — verify_jwt=false).
   const provided =
     req.headers.get('x-edge-secret') ??
     (req.headers.get('authorization') ?? '').replace(/^Bearer\s+/i, '')
@@ -54,7 +47,7 @@ Deno.serve(async (req) => {
     return json({ error: 'Unauthorized' }, 401)
   }
 
-  // 2. Confere que os secrets necessários p/ a geração (E2) já estão presentes.
+  // 2. Confere secrets necessários p/ a geração.
   const missing = (
     [
       ['SUPABASE_URL', SUPABASE_URL],
@@ -76,7 +69,7 @@ Deno.serve(async (req) => {
     return json({ error: 'Invalid JSON body' }, 400)
   }
 
-  // Decisão (2): só nos interessam INSERT/UPDATE em `anamnesis`.
+  // Decisão (2): só INSERT/UPDATE em `anamnesis`.
   if (
     payload.table !== 'anamnesis' ||
     (payload.type !== 'INSERT' && payload.type !== 'UPDATE')
@@ -89,28 +82,43 @@ Deno.serve(async (req) => {
     return json({ error: 'record.user_id ausente no payload' }, 400)
   }
 
-  // 4. Smoke-test do service client: deriva o nutricionista do aluno — mesma
-  //    pré-condição que a geração real usará na E2.
-  const supabase = createClient(SUPABASE_URL, SERVICE_ROLE_KEY)
-  const { data: student, error } = await supabase
+  const supabase: SupabaseClient = createClient(SUPABASE_URL, SERVICE_ROLE_KEY)
+
+  // 4. Deriva o nutricionista do aluno (não confia em input do cliente).
+  const { data: student, error: stuErr } = await supabase
     .from('profiles')
-    .select('id, nutritionist_id, status')
+    .select('id, nutritionist_id')
     .eq('id', studentId)
     .maybeSingle()
-  if (error) {
-    return json({ error: 'DB error', detail: error.message }, 500)
+  if (stuErr) return json({ error: 'DB error', detail: stuErr.message }, 500)
+  if (!student) return json({ error: 'Aluno não encontrado' }, 404)
+
+  const nutritionistId = (student.nutritionist_id as string | null) ?? null
+  if (!nutritionistId) {
+    return json({ error: 'Aluno sem nutricionista vinculado' }, 400)
   }
 
-  return json({
-    ok: true,
-    phase: 'E1',
-    event: { type: payload.type, table: payload.table },
-    wouldGenerateFor: {
+  // 5. Gera + persiste, medindo o WALL-CLOCK da geração.
+  const t0 = performance.now()
+  try {
+    const { planId, skipped } = await generateDietForStudent({ studentId, nutritionistId }, supabase)
+    const elapsedMs = Math.round(performance.now() - t0)
+    return json({
+      ok: true,
+      phase: 'E2',
+      planId,
+      skipped, // true = reaproveitou plano pendente (guard gera-uma-vez)
+      elapsed_ms: elapsedMs,
+      elapsed_s: Number((elapsedMs / 1000).toFixed(1)),
       studentId,
-      nutritionistId: student?.nutritionist_id ?? null,
-      status: student?.status ?? null,
-      found: Boolean(student),
-    },
-    note: 'Geração real + medição de wall-clock entram na Fase E2.',
-  })
+      nutritionistId,
+    })
+  } catch (err) {
+    const elapsedMs = Math.round(performance.now() - t0)
+    console.error('[generate-diet]', err)
+    return json(
+      { error: 'Erro ao gerar dieta', detail: String(err), elapsed_ms: elapsedMs },
+      500,
+    )
+  }
 })
