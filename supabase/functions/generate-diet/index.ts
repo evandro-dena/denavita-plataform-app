@@ -1,37 +1,58 @@
 // =====================================================================
-// Edge Function: generate-diet — FONTE DO FLUXO AUTOMÁTICO
+// Edge Function: generate-diet — WORKER ASSÍNCRONO do botão "Gerar plano"
 // =====================================================================
-// Acionada por trigger (INSERT + UPDATE) em `anamnesis` via Database Webhook
-// / pg_net. A rota Vercel /api/ai/students/[id]/generate-diet permanece como
-// fonte do fluxo MANUAL (nutricionista clica "Gerar").
+// Acionada pela rota Vercel kickoff (F3) — NÃO mais por trigger (disparo auto
+// removido na F1). Responde 202 NA HORA e gera em background (waitUntil), então
+// grava diet_generation_status (pronto|erro). Isso mantém os ~68s FORA do limite
+// de 60s do Vercel Hobby (rodam aqui, no Supabase, até 150s no Free).
 //
-// FASE E2: gera de fato a dieta (porte de generate-and-persist.ts) e MEDE o
-// wall-clock da geração, devolvido no JSON p/ comparar com o limite do Edge.
+// FASE F2: 202 + background + status. Geração em si = porte da E2 (_shared).
 // =====================================================================
 
 import { createClient, type SupabaseClient } from 'jsr:@supabase/supabase-js@2'
 import { generateDietForStudent } from '../_shared/generate.ts'
 
-// Secrets auto-injetados pelo runtime do Supabase em funções deployadas.
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL') ?? ''
 const SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
-// Secrets custom — setar via `supabase secrets set` (prod) ou --env-file (local).
 const EDGE_SHARED_SECRET = Deno.env.get('EDGE_SHARED_SECRET') ?? ''
 const GEMINI_API_KEY = Deno.env.get('GEMINI_API_KEY') ?? ''
-
-interface WebhookPayload {
-  type: 'INSERT' | 'UPDATE' | 'DELETE'
-  table: string
-  schema: string
-  record: Record<string, unknown> | null
-  old_record: Record<string, unknown> | null
-}
 
 function json(body: unknown, status = 200): Response {
   return new Response(JSON.stringify(body), {
     status,
     headers: { 'content-type': 'application/json' },
   })
+}
+
+type GenStatus = 'gerando' | 'pronto' | 'erro'
+
+async function setStatus(
+  supabase: SupabaseClient,
+  studentId: string,
+  status: GenStatus,
+  planId: string | null = null,
+  error: string | null = null,
+): Promise<void> {
+  await supabase.from('diet_generation_status').upsert({
+    student_id: studentId,
+    status,
+    plan_id: planId,
+    error,
+    updated_at: new Date().toISOString(),
+  })
+}
+
+// Roda o promise em background. No Supabase usa EdgeRuntime.waitUntil (mantém o
+// worker vivo após o 202); localmente (deno run) o servidor segue vivo e o
+// promise continua no event loop.
+function runInBackground(promise: Promise<unknown>): void {
+  // @ts-ignore EdgeRuntime existe só no runtime do Supabase
+  const er = typeof EdgeRuntime !== 'undefined' ? EdgeRuntime : undefined
+  if (er?.waitUntil) {
+    er.waitUntil(promise)
+  } else {
+    promise.catch((e) => console.error('[generate-diet bg]', e))
+  }
 }
 
 Deno.serve(async (req) => {
@@ -47,7 +68,7 @@ Deno.serve(async (req) => {
     return json({ error: 'Unauthorized' }, 401)
   }
 
-  // 2. Confere secrets necessários p/ a geração.
+  // 2. Secrets necessários p/ a geração.
   const missing = (
     [
       ['SUPABASE_URL', SUPABASE_URL],
@@ -61,25 +82,16 @@ Deno.serve(async (req) => {
     return json({ error: 'Missing secrets', missing }, 500)
   }
 
-  // 3. Lê o payload do webhook.
-  let payload: WebhookPayload
+  // 3. Payload — aceita { studentId } (kickoff) ou { record: { user_id } } (legado).
+  let body: { studentId?: string; record?: { user_id?: string } }
   try {
-    payload = await req.json()
+    body = await req.json()
   } catch {
     return json({ error: 'Invalid JSON body' }, 400)
   }
-
-  // Decisão (2): só INSERT/UPDATE em `anamnesis`.
-  if (
-    payload.table !== 'anamnesis' ||
-    (payload.type !== 'INSERT' && payload.type !== 'UPDATE')
-  ) {
-    return json({ ok: true, ignored: true, reason: `evento ${payload.type} em ${payload.table}` })
-  }
-
-  const studentId = (payload.record?.user_id as string | undefined) ?? null
+  const studentId = body.studentId ?? body.record?.user_id ?? null
   if (!studentId) {
-    return json({ error: 'record.user_id ausente no payload' }, 400)
+    return json({ error: 'studentId ausente no payload' }, 400)
   }
 
   const supabase: SupabaseClient = createClient(SUPABASE_URL, SERVICE_ROLE_KEY)
@@ -98,27 +110,29 @@ Deno.serve(async (req) => {
     return json({ error: 'Aluno sem nutricionista vinculado' }, 400)
   }
 
-  // 5. Gera + persiste, medindo o WALL-CLOCK da geração.
-  const t0 = performance.now()
-  try {
-    const { planId, skipped } = await generateDietForStudent({ studentId, nutritionistId }, supabase)
-    const elapsedMs = Math.round(performance.now() - t0)
-    return json({
-      ok: true,
-      phase: 'E2',
-      planId,
-      skipped, // true = reaproveitou plano pendente (guard gera-uma-vez)
-      elapsed_ms: elapsedMs,
-      elapsed_s: Number((elapsedMs / 1000).toFixed(1)),
-      studentId,
-      nutritionistId,
-    })
-  } catch (err) {
-    const elapsedMs = Math.round(performance.now() - t0)
-    console.error('[generate-diet]', err)
-    return json(
-      { error: 'Erro ao gerar dieta', detail: String(err), elapsed_ms: elapsedMs },
-      500,
-    )
-  }
+  // 5. Marca 'gerando' (a UI já mostra spinner) e dispara a geração em background.
+  await setStatus(supabase, studentId, 'gerando')
+
+  const job = (async () => {
+    const t0 = performance.now()
+    try {
+      const { planId, skipped } = await generateDietForStudent(
+        { studentId, nutritionistId },
+        supabase,
+      )
+      await setStatus(supabase, studentId, 'pronto', planId)
+      console.log(
+        `[generate-diet] pronto student=${studentId} plan=${planId} skipped=${skipped} ${Math.round(
+          performance.now() - t0,
+        )}ms`,
+      )
+    } catch (err) {
+      await setStatus(supabase, studentId, 'erro', null, String(err))
+      console.error(`[generate-diet] erro student=${studentId}`, err)
+    }
+  })()
+  runInBackground(job)
+
+  // 6. Resposta imediata (≈ sub-segundo) — não espera os ~68s.
+  return json({ ok: true, phase: 'F2', status: 'gerando', studentId, nutritionistId }, 202)
 })
