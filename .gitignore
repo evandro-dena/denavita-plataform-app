@@ -41,3 +41,7 @@ yarn-error.log*
 next-env.d.ts
 lib/ai/diet-references/
 lib/ai/references-meta.json
+
+# supabase CLI (link/artefatos locais)
+supabase/.temp/
+supabase/functions/**/deno.lock
