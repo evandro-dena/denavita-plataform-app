@@ -12,8 +12,9 @@ import { createServiceClient, getSessionUser } from '@/lib/supabase/server'
 const STALE_MS = 3 * 60 * 1000
 
 function edgeConfig(): { url: string | null; secret: string | null } {
+  // `||` (não `??`): override vazio ("") cai no derivado de produção.
   const url =
-    process.env.EDGE_GENERATE_DIET_URL ??
+    process.env.EDGE_GENERATE_DIET_URL ||
     (process.env.NEXT_PUBLIC_SUPABASE_URL
       ? `${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/generate-diet`
       : null)
