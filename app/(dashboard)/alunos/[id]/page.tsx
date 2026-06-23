@@ -17,6 +17,7 @@ import { toast } from 'sonner'
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts'
 import { DietPlan, Meal, MealItem } from '@/types'
 import { aiService } from '@/lib/api/ai'
+import { GenerateDietButton } from '@/components/diet/GenerateDietButton'
 
 // ─── Sub-components ───────────────────────────────────────────────
 
@@ -512,6 +513,7 @@ export default function StudentProfilePage({ params }: { params: Promise<{ id: s
           </div>
         </div>
         <div className="flex items-center gap-3">
+          <GenerateDietButton studentId={student.id} />
           <Button
             onClick={() => openNotify('vencimento')}
             size="sm"
