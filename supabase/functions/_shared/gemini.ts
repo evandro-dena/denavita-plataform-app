@@ -59,6 +59,45 @@ export async function getValidUris(
 
 // Gera o plano alimentar via Gemini a partir de um prompt pronto, usando as
 // referências do nutricionista como contexto. Retorna o JSON parseado.
+// Erros transitórios do Gemini que VALE retentar: 503/UNAVAILABLE (sobrecarga)
+// e 429/RESOURCE_EXHAUSTED (rate limit). NÃO inclui erros definitivos como
+// 400/API_KEY_INVALID, 401/403 (auth) ou prompt rejeitado — esses falham na hora.
+function isTransientGeminiError(err: unknown): boolean {
+  const e = err as { status?: number; code?: number; message?: string }
+  const code = e?.status ?? e?.code
+  if (code === 503 || code === 429) return true
+  // O @google/genai lança ApiError com JSON na message: {"error":{"code":503,"status":"UNAVAILABLE"}}
+  const msg = String(e?.message ?? err)
+  if (/"code"\s*:\s*(503|429)\b/.test(msg)) return true
+  if (/\b(UNAVAILABLE|RESOURCE_EXHAUSTED)\b/.test(msg)) return true
+  if (/overloaded|high demand|try again later|temporarily/i.test(msg)) return true
+  return false
+}
+
+// Backoff entre tentativas (ms). 3 tentativas no total; soma das esperas = 6s.
+// Somado a ~68s de uma geração bem-sucedida, cabe folgado no wall-clock da Edge
+// (150s no Free). Falhas 503 retornam rápido, então o pior caso fica bem abaixo.
+const RETRY_BACKOFFS_MS = [2000, 4000]
+const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms))
+
+async function generateContentWithRetry(contents: object[]) {
+  const maxAttempts = RETRY_BACKOFFS_MS.length + 1 // 3
+  let lastErr: unknown
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    try {
+      return await gemini.models.generateContent({ model: 'gemini-2.5-flash', contents })
+    } catch (err) {
+      lastErr = err
+      // Definitivo OU última tentativa → falha agora (sem insistir).
+      if (!isTransientGeminiError(err) || attempt === maxAttempts) throw err
+      const wait = RETRY_BACKOFFS_MS[attempt - 1]
+      console.warn(`[gemini] tentativa ${attempt}/${maxAttempts} falhou (transitório); retry em ${wait}ms`)
+      await sleep(wait)
+    }
+  }
+  throw lastErr
+}
+
 export async function generatePlanFromPrompt(
   prompt: string,
   nutriId: string | undefined,
@@ -83,10 +122,7 @@ export async function generatePlanFromPrompt(
 
   contents.push({ parts: [{ text: prompt }] })
 
-  const response = await gemini.models.generateContent({
-    model: 'gemini-2.5-flash',
-    contents,
-  })
+  const response = await generateContentWithRetry(contents)
 
   const text = response.text ?? ''
   const jsonMatch = text.match(/\{[\s\S]*\}/)
