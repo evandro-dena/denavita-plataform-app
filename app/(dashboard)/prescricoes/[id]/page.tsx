@@ -32,23 +32,6 @@ function Editor({ plan, onSave }: { plan: DietPlan; onSave: (p: Partial<DietPlan
   const [manipulated, setManipulated] = useState(plan.manipulated ?? '')
   const [shoppingList, setShoppingList] = useState(plan.shopping_list ?? '')
 
-  // Recálculo automático SÓ vale p/ dieta com itens estruturados (IA). Sem itens
-  // (manual/free_text) não há o que somar → mantém o total manual.
-  const round1 = (n: number) => Math.round(n * 10) / 10
-  const hasItems = meals.some(m => m.items.length > 0)
-  const computedTotals = meals.reduce(
-    (acc, m) => {
-      m.items.forEach(it => {
-        acc.kcal += Number(it.calories) || 0
-        acc.protein += Number(it.protein) || 0
-        acc.carbs += Number(it.carbs) || 0
-        acc.fat += Number(it.fat) || 0
-      })
-      return acc
-    },
-    { kcal: 0, protein: 0, carbs: 0, fat: 0 },
-  )
-
   const toggleExpand = (id: string) =>
     setExpanded(prev => {
       const next = new Set(prev)
@@ -78,29 +61,6 @@ function Editor({ plan, onSave }: { plan: DietPlan; onSave: (p: Partial<DietPlan
     setMeals(prev => [...prev, { ...meal, id, name: `${meal.name} (cópia)` }])
     setExpanded(prev => new Set([...prev, id]))
   }
-
-  // ── Edição dos alimentos estruturados (dieta IA) ──
-  const updateItem = (
-    mealId: string,
-    itemId: string,
-    field: 'name' | 'quantity' | 'calories' | 'protein' | 'carbs' | 'fat',
-    val: string,
-  ) =>
-    setMeals(prev => prev.map(m => m.id === mealId
-      ? { ...m, items: m.items.map(it => it.id === itemId
-          ? { ...it, [field]: field === 'name' || field === 'quantity' ? val : Number(val) || 0 }
-          : it) }
-      : m))
-
-  const addItem = (mealId: string) =>
-    setMeals(prev => prev.map(m => m.id === mealId
-      ? { ...m, items: [...m.items, { id: String(Date.now() + Math.random()), name: '', quantity: '', calories: 0, protein: 0, carbs: 0, fat: 0 }] }
-      : m))
-
-  const removeItem = (mealId: string, itemId: string) =>
-    setMeals(prev => prev.map(m => m.id === mealId
-      ? { ...m, items: m.items.filter(it => it.id !== itemId) }
-      : m))
 
   const generateWithAI = async () => {
     if (!aiPrompt.trim()) { toast.error('Escreva o que quer que a IA faça'); return }
@@ -154,12 +114,9 @@ function Editor({ plan, onSave }: { plan: DietPlan; onSave: (p: Partial<DietPlan
             Gerar PDF
           </Button>
           <Button size="sm" onClick={() => onSave({
-            name, meals,
-            type: hasItems ? 'alimentos' : 'textos_livres',
-            total_calories: hasItems ? round1(computedTotals.kcal) : Number(nutrients.kcal),
-            total_protein: hasItems ? round1(computedTotals.protein) : Number(nutrients.protein),
-            total_carbs: hasItems ? round1(computedTotals.carbs) : Number(nutrients.carbs),
-            total_fat: hasItems ? round1(computedTotals.fat) : Number(nutrients.fat),
+            name, meals, type: 'textos_livres',
+            total_calories: Number(nutrients.kcal), total_protein: Number(nutrients.protein),
+            total_carbs: Number(nutrients.carbs), total_fat: Number(nutrients.fat),
             supplements, manipulated, shopping_list: shoppingList,
           })}
             style={{ background: '#C8FF00', color: '#1C1C1C', borderRadius: '10px', fontWeight: 700, fontFamily: 'Poppins, sans-serif' }}>
@@ -310,62 +267,17 @@ function Editor({ plan, onSave }: { plan: DietPlan; onSave: (p: Partial<DietPlan
                       ))}
                     </div>
 
-                    {/* COM itens (IA) → lista estruturada editável; SEM itens (manual) → texto livre */}
-                    {meal.items.length > 0 ? (
-                      <div className="flex flex-col gap-2">
-                        <div className="grid items-center gap-2 px-1 text-xs"
-                          style={{ color: '#555555', gridTemplateColumns: '1fr 72px 52px 40px 40px 40px 24px' }}>
-                          <span>Alimento</span><span>Qtd</span><span>Kcal</span><span>P</span><span>C</span><span>G</span><span />
-                        </div>
-                        {meal.items.map(it => (
-                          <div key={it.id} className="grid items-center gap-2"
-                            style={{ gridTemplateColumns: '1fr 72px 52px 40px 40px 40px 24px' }}>
-                            <input value={it.name} onChange={e => updateItem(meal.id, it.id, 'name', e.target.value)}
-                              placeholder="Alimento"
-                              className="bg-transparent border-b pb-1 text-xs outline-none focus:border-[#C8FF00] transition-colors"
-                              style={{ color: '#FFFFFF', borderColor: '#3D3D3D' }} />
-                            <input value={it.quantity} onChange={e => updateItem(meal.id, it.id, 'quantity', e.target.value)}
-                              placeholder="qtd"
-                              className="bg-transparent border-b pb-1 text-xs outline-none focus:border-[#C8FF00] transition-colors"
-                              style={{ color: '#FFFFFF', borderColor: '#3D3D3D' }} />
-                            {(['calories', 'protein', 'carbs', 'fat'] as const).map(k => (
-                              <input key={k} type="number" value={it[k]}
-                                onChange={e => updateItem(meal.id, it.id, k, e.target.value)}
-                                className="bg-transparent border-b pb-1 text-xs outline-none focus:border-[#C8FF00] transition-colors"
-                                style={{ color: '#FFFFFF', borderColor: '#3D3D3D', width: '100%' }} />
-                            ))}
-                            <button onClick={() => removeItem(meal.id, it.id)}
-                              className="p-1 rounded-lg hover:bg-red-500/10 transition-all">
-                              <Trash2 size={12} style={{ color: '#EF4444' }} />
-                            </button>
-                          </div>
-                        ))}
-                        <button onClick={() => addItem(meal.id)}
-                          className="self-start flex items-center gap-1 text-xs px-2.5 py-1.5 rounded-xl border transition-all hover:border-[#C8FF00] hover:text-[#C8FF00]"
-                          style={{ borderColor: '#3D3D3D', color: '#888888' }}>
-                          <Plus size={11} /> Adicionar alimento
-                        </button>
-                      </div>
-                    ) : (
-                      <div className="flex flex-col gap-2">
-                        <div className="flex items-start gap-2">
-                          <AlignJustify size={13} className="mt-2.5 flex-shrink-0" style={{ color: '#555555' }} />
-                          <textarea
-                            value={meal.free_text ?? ''}
-                            onChange={e => updateMeal(meal.id, 'free_text', e.target.value)}
-                            rows={4}
-                            placeholder="[Texto livre até 10.000 caracteres]"
-                            className="flex-1 resize-none border rounded-xl px-3 py-2.5 text-sm outline-none leading-relaxed focus:border-[#C8FF00] transition-colors"
-                            style={{ background: '#2F2F2F', color: '#FFFFFF', borderColor: '#3D3D3D' }}
-                          />
-                        </div>
-                        <button onClick={() => addItem(meal.id)}
-                          className="self-start flex items-center gap-1 text-xs px-2.5 py-1.5 rounded-xl border transition-all hover:border-[#C8FF00] hover:text-[#C8FF00]"
-                          style={{ borderColor: '#3D3D3D', color: '#888888' }}>
-                          <Plus size={11} /> Adicionar alimento (modo estruturado)
-                        </button>
-                      </div>
-                    )}
+                    <div className="flex items-start gap-2">
+                      <AlignJustify size={13} className="mt-2.5 flex-shrink-0" style={{ color: '#555555' }} />
+                      <textarea
+                        value={meal.free_text ?? ''}
+                        onChange={e => updateMeal(meal.id, 'free_text', e.target.value)}
+                        rows={4}
+                        placeholder="[Texto livre até 10.000 caracteres]"
+                        className="flex-1 resize-none border rounded-xl px-3 py-2.5 text-sm outline-none leading-relaxed focus:border-[#C8FF00] transition-colors"
+                        style={{ background: '#2F2F2F', color: '#FFFFFF', borderColor: '#3D3D3D' }}
+                      />
+                    </div>
                   </div>
                 )}
               </div>
@@ -386,27 +298,19 @@ function Editor({ plan, onSave }: { plan: DietPlan; onSave: (p: Partial<DietPlan
             <div key={n.key}>
               <label className="text-xs block mb-1" style={{ color: '#555555' }}>{n.label}</label>
               <div className="flex items-center gap-1">
-                <input type="number"
-                  value={hasItems ? round1(computedTotals[n.key]) : nutrients[n.key]}
-                  readOnly={hasItems}
-                  onChange={e => { if (!hasItems) setNutrients(p => ({ ...p, [n.key]: e.target.value })) }}
+                <input type="number" value={nutrients[n.key]}
+                  onChange={e => setNutrients(p => ({ ...p, [n.key]: e.target.value }))}
                   className="w-20 bg-transparent border-b pb-1 text-base font-bold outline-none"
-                  style={{ color: n.color, borderColor: '#3D3D3D', opacity: hasItems ? 0.8 : 1, cursor: hasItems ? 'not-allowed' : 'text' }} />
+                  style={{ color: n.color, borderColor: '#3D3D3D' }} />
                 {n.key !== 'kcal' && <span className="text-xs" style={{ color: '#555555' }}>g</span>}
               </div>
             </div>
           ))}
         </div>
-        {hasItems ? (
-          <p className="text-xs" style={{ color: '#555555' }}>
-            ✦ Totais somados automaticamente dos alimentos — edite os itens e eles recalculam.
-          </p>
-        ) : (
-          <Button size="sm" onClick={() => toast.success('Nutrientes atualizados!')}
-            style={{ background: '#C8FF00', color: '#1C1C1C', borderRadius: '10px', fontFamily: 'Poppins, sans-serif', fontWeight: 700 }}>
-            Atualizar Nutrientes
-          </Button>
-        )}
+        <Button size="sm" onClick={() => toast.success('Nutrientes atualizados!')}
+          style={{ background: '#C8FF00', color: '#1C1C1C', borderRadius: '10px', fontFamily: 'Poppins, sans-serif', fontWeight: 700 }}>
+          Atualizar Nutrientes
+        </Button>
       </div>
 
       {/* Suplementos / Manipulados / Lista de compras */}

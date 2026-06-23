@@ -1,5 +1,6 @@
 // Porte (Deno) de lib/ai/generate-and-persist.ts — gera a dieta por IA e
-// PERSISTE em diet_plans + meals + meal_items (source='ia', pendente de revisão).
+// PERSISTE em diet_plans + meals (texto livre), source='ia', pendente de revisão.
+// Formato único com a dieta manual: alimentos no free_text, macros só nos totais.
 import type { SupabaseClient } from 'jsr:@supabase/supabase-js@2'
 import { buildPrompt } from './prompt.ts'
 import { generatePlanFromPrompt } from './gemini.ts'
@@ -31,8 +32,8 @@ interface AIPlan {
 }
 
 /**
- * Gera a dieta por IA para um aluno e PERSISTE em diet_plans + meals + meal_items.
- * - source = 'ia' (literal); type = 'alimentos'; created_by = nutritionist_id
+ * Gera a dieta por IA para um aluno e PERSISTE em diet_plans + meals (texto livre).
+ * - source = 'ia' (literal); type = 'textos_livres'; created_by = nutritionist_id
  * - guard gera-uma-vez via pending_review_plans; NÃO ativa (active_plans).
  * Retorna o planId e se reaproveitou um plano pendente (skipped).
  */
@@ -86,7 +87,7 @@ export async function generateDietForStudent(
   const prompt = buildPrompt({ student, anamnesis, lastAssessment, nutriId: nutritionistId })
   const plan = (await generatePlanFromPrompt(prompt, nutritionistId, supabase)) as AIPlan
 
-  // 3. Persiste o plano (source='ia', type='alimentos')
+  // 3. Persiste o plano (source='ia', type='textos_livres' — formato único c/ a manual)
   const planName = `Dieta IA — ${new Date().toLocaleDateString('pt-BR')}`
   const { data: dp, error: dpErr } = await supabase
     .from('diet_plans')
@@ -94,7 +95,7 @@ export async function generateDietForStudent(
       user_id: studentId,
       created_by: nutritionistId,
       source: 'ia',
-      type: 'alimentos',
+      type: 'textos_livres',
       name: planName,
       total_calories: Number(plan.total_calories) || 0,
       total_protein: Number(plan.total_protein) || 0,
@@ -107,41 +108,30 @@ export async function generateDietForStudent(
   if (dpErr || !dp) throw new Error(dpErr?.message ?? 'Erro ao gravar diet_plans')
   const planId = dp.id as string
 
-  // 4. meals + meal_items
+  // 4. meals — formato TEXTO LIVRE. Compõe o free_text com os alimentos da IA
+  //    (um por linha: "<quantidade> <nome>", sem macro por item). NÃO grava
+  //    meal_items: os macros ficam só nos totais do plano (acima).
   const meals = Array.isArray(plan.meals) ? plan.meals : []
   for (let i = 0; i < meals.length; i++) {
     const meal = meals[i]
-    const { data: savedMeal } = await supabase
-      .from('meals')
-      .insert({
-        plan_id: planId,
-        name: meal.name,
-        name_en: meal.name_en,
-        name_es: meal.name_es,
-        time: meal.time,
-        emoji: meal.emoji,
-        substitution: meal.substitution,
-        free_text: meal.free_text,
-        sort_order: i,
-      })
-      .select('id')
-      .single()
-
     const items = Array.isArray(meal.items) ? meal.items : []
-    if (savedMeal && items.length) {
-      await supabase.from('meal_items').insert(
-        items.map((item, j) => ({
-          meal_id: savedMeal.id,
-          name: item.name,
-          quantity: item.quantity,
-          calories: item.calories,
-          protein: item.protein,
-          carbs: item.carbs,
-          fat: item.fat,
-          sort_order: j,
-        })),
-      )
-    }
+    const composed = items
+      .map((it) => [it.quantity, it.name].map((s) => (s ?? '').toString().trim()).filter(Boolean).join(' '))
+      .filter(Boolean)
+      .join('\n')
+    const freeText = (meal.free_text ?? '').trim() || composed
+
+    await supabase.from('meals').insert({
+      plan_id: planId,
+      name: meal.name,
+      name_en: meal.name_en,
+      name_es: meal.name_es,
+      time: meal.time,
+      emoji: meal.emoji,
+      substitution: meal.substitution,
+      free_text: freeText,
+      sort_order: i,
+    })
   }
 
   // 5. Marca como PENDENTE de revisão (PK = student_id → upsert dedupa).
