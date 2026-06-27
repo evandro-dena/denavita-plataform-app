@@ -1,7 +1,7 @@
 'use client'
 import { use, useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { studentService, anamnesisService, assessmentService, examService, weightService } from '@/lib/api/students'
+import { studentService, anamnesisService, assessmentService, examService, weightService, dietReviewService } from '@/lib/api/students'
 import { mealPlanService } from '@/lib/api/diet'
 import { calcularIdade, formatarData, traduzirCampo, traduzirBooleano, traduzirCondicional } from '@/constants/anamnesisLabels'
 import Topbar from '@/components/layout/Topbar'
@@ -238,9 +238,21 @@ export default function StudentProfilePage({ params }: { params: Promise<{ id: s
   const { data: exams = [] } = useQuery({ queryKey: ['exams', id], queryFn: () => examService.list(id) })
   const { data: weightHistory = [] } = useQuery({ queryKey: ['weight', id], queryFn: () => weightService.getHistory(id) })
   const { data: dietPlan } = useQuery({ queryKey: ['diet', id], queryFn: () => mealPlanService.getMealPlan(id) })
+  const { data: pendingPlan } = useQuery({ queryKey: ['pending-plan', id], queryFn: () => mealPlanService.getPendingPlan(id) })
 
   // suppress unused variable warnings for anamnesis (used in DietEditor via query)
   void anamnesis
+
+  const releasePlan = useMutation({
+    mutationFn: () => dietReviewService.release(id),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['pending-plan', id] })
+      qc.invalidateQueries({ queryKey: ['diet', id] })
+      qc.invalidateQueries({ queryKey: ['student', id] })
+      toast.success('Dieta liberada para o aluno!')
+    },
+    onError: (e) => toast.error(e instanceof Error ? e.message : 'Erro ao liberar'),
+  })
 
   const updateExam = useMutation({
     mutationFn: ({ examId, status, notes }: { examId: string; status: 'analisado' | 'pendente'; notes?: string }) =>
@@ -711,6 +723,43 @@ export default function StudentProfilePage({ params }: { params: Promise<{ id: s
 
         {/* PRESCRIÇÃO */}
         <TabsContent value="prescricao">
+          {/* Dieta gerada pela IA, ainda não liberada: card âmbar inequívoco
+              vs. o plano ativo (verde). "Ver / editar" abre o editor free-text
+              em /prescricoes/[id], que persiste no MESMO plano (id/source/type),
+              de modo que a edição não se perde ao liberar. */}
+          {pendingPlan && (
+            <div className="rounded-2xl border p-5 mb-6" style={{ background: '#2A2310', borderColor: '#F59E0B' }}>
+              <div className="flex items-center gap-2 mb-3 flex-wrap">
+                <Clock size={15} style={{ color: '#F59E0B' }} />
+                <span className="text-xs font-bold uppercase tracking-wide px-2 py-0.5 rounded-full"
+                  style={{ background: 'rgba(245,158,11,0.15)', color: '#F59E0B' }}>
+                  Aguardando liberação
+                </span>
+                <span className="text-xs" style={{ color: '#888888' }}>
+                  gerada pela IA · {new Date(pendingPlan.created_at).toLocaleDateString('pt-BR')}
+                </span>
+              </div>
+              <h4 className="font-semibold mb-1" style={{ fontFamily: 'Poppins, sans-serif', color: '#FFFFFF' }}>
+                {pendingPlan.name ?? 'Dieta IA'}
+              </h4>
+              <p className="text-xs mb-4" style={{ color: '#888888' }}>
+                {pendingPlan.total_calories ?? 0} kcal · P {pendingPlan.total_protein ?? 0}g · C {pendingPlan.total_carbs ?? 0}g · G {pendingPlan.total_fat ?? 0}g
+                {pendingPlan.type === 'textos_livres' ? ' · texto livre' : ''}
+              </p>
+              <div className="flex gap-2 flex-wrap">
+                <Link href={`/prescricoes/${pendingPlan.id}`}>
+                  <Button size="sm"
+                    style={{ background: 'rgba(245,158,11,0.12)', color: '#F59E0B', border: '1px solid rgba(245,158,11,0.35)', borderRadius: '10px' }}>
+                    Ver / editar dieta
+                  </Button>
+                </Link>
+                <Button size="sm" disabled={releasePlan.isPending} onClick={() => releasePlan.mutate()}
+                  style={{ background: '#C8FF00', color: '#1C1C1C', borderRadius: '10px', fontWeight: 600 }}>
+                  {releasePlan.isPending ? 'Liberando...' : 'Liberar ▸'}
+                </Button>
+              </div>
+            </div>
+          )}
           <DietEditor
             plan={dietPlan}
             onSave={plan => saveDiet.mutate(plan)}

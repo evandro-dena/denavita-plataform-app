@@ -1,6 +1,18 @@
 import { DietPlan, Meal, MealItem } from '@/types'
 import { supabase } from '@/lib/supabase/client'
 
+// Resumo do plano pendente de revisão (card "Aguardando liberação").
+export type PendingPlanSummary = {
+  id: string
+  name: string | null
+  created_at: string
+  total_calories: number | null
+  total_protein: number | null
+  total_carbs: number | null
+  total_fat: number | null
+  type: 'alimentos' | 'textos_livres'
+}
+
 // ─── Mappers ──────────────────────────────────────────────────────
 
 function mapMealItem(r: Record<string, unknown>): MealItem {
@@ -98,6 +110,26 @@ export const mealPlanService = {
       .single()
 
     return data?.plan_id ?? null
+  },
+
+  // Plano pendente de revisão (gerado pela IA, ainda NÃO ativado). Usado para
+  // exibir o card "Aguardando liberação" na aba de prescrição do aluno.
+  async getPendingPlan(studentId: string): Promise<PendingPlanSummary | null> {
+    const { data: pending } = await supabase
+      .from('pending_review_plans')
+      .select('plan_id')
+      .eq('student_id', studentId)
+      .maybeSingle()
+
+    if (!pending?.plan_id) return null
+
+    const { data: plan } = await supabase
+      .from('diet_plans')
+      .select('id, name, created_at, total_calories, total_protein, total_carbs, total_fat, type')
+      .eq('id', pending.plan_id as string)
+      .maybeSingle()
+
+    return (plan as PendingPlanSummary) ?? null
   },
 
   async activateForStudent(planId: string | null, studentId: string): Promise<void> {
