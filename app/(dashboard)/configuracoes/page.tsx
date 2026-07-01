@@ -63,7 +63,7 @@ function RefCard({ ref: r, onDelete }: { ref: RefFile; onDelete: () => void }) {
 export default function ConfiguracoesPage() {
   const [activeTab, setActiveTab] = useState<'perfil' | 'ia'>('perfil')
   const [dragging, setDragging] = useState(false)
-  const [uploading, setUploading] = useState(false)
+  const [uploadProgress, setUploadProgress] = useState<{ current: number; total: number } | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const qc = useQueryClient()
   const nutriId = useNutriId()
@@ -86,38 +86,47 @@ export default function ConfiguracoesPage() {
     onSuccess: () => { qc.invalidateQueries({ queryKey: ['ai-references'] }); toast.success('Referência removida.') },
   })
 
-  async function uploadFile(file: File) {
-    if (!file.name.toLowerCase().endsWith('.pdf')) {
-      toast.error('Apenas arquivos PDF são aceitos')
-      return
-    }
+  async function uploadFiles(files: File[]) {
+    const pdfs = files.filter(f => f.name.toLowerCase().endsWith('.pdf'))
+    if (pdfs.length === 0) { toast.error('Apenas arquivos PDF são aceitos'); return }
     if (!nutriId) { toast.error('Aguarde carregar...'); return }
-    setUploading(true)
-    try {
-      const fd = new FormData()
-      fd.append('file', file)
-      fd.append('nutri_id', nutriId)
-      const res = await fetch('/api/ai/upload-reference', { method: 'POST', body: fd })
-      if (!res.ok) throw new Error(await res.text())
-      qc.invalidateQueries({ queryKey: ['ai-references'] })
-      toast.success(`"${file.name.replace('.pdf', '')}" carregado! O Gemini vai usar este plano como referência.`)
-    } catch {
-      toast.error('Erro ao carregar o arquivo. Tente novamente.')
-    } finally {
-      setUploading(false)
+
+    let success = 0
+    let failed = 0
+    setUploadProgress({ current: 0, total: pdfs.length })
+
+    for (let i = 0; i < pdfs.length; i++) {
+      setUploadProgress({ current: i + 1, total: pdfs.length })
+      try {
+        const fd = new FormData()
+        fd.append('file', pdfs[i])
+        fd.append('nutri_id', nutriId)
+        const res = await fetch('/api/ai/upload-reference', { method: 'POST', body: fd })
+        if (!res.ok) throw new Error()
+        success++
+      } catch {
+        failed++
+      }
     }
+
+    qc.invalidateQueries({ queryKey: ['ai-references'] })
+    setUploadProgress(null)
+
+    if (success > 0 && failed === 0) toast.success(`${success} arquivo${success > 1 ? 's' : ''} carregado${success > 1 ? 's' : ''} com sucesso!`)
+    else if (success > 0 && failed > 0) toast.warning(`${success} carregado${success > 1 ? 's' : ''}, ${failed} com erro`)
+    else toast.error('Erro ao carregar os arquivos. Tente novamente.')
   }
 
   function handleDrop(e: React.DragEvent) {
     e.preventDefault()
     setDragging(false)
-    const file = e.dataTransfer.files[0]
-    if (file) uploadFile(file)
+    const files = Array.from(e.dataTransfer.files)
+    if (files.length) uploadFiles(files)
   }
 
   function handleFileInput(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0]
-    if (file) uploadFile(file)
+    const files = Array.from(e.target.files ?? [])
+    if (files.length) uploadFiles(files)
     e.target.value = ''
   }
 
@@ -192,21 +201,23 @@ export default function ConfiguracoesPage() {
               onDragOver={e => { e.preventDefault(); setDragging(true) }}
               onDragLeave={() => setDragging(false)}
               onDrop={handleDrop}
-              onClick={() => !uploading && fileInputRef.current?.click()}
+              onClick={() => !uploadProgress && fileInputRef.current?.click()}
               className="rounded-2xl border-2 border-dashed flex flex-col items-center justify-center gap-3 py-10 cursor-pointer transition-all"
               style={{
                 borderColor: dragging ? '#C8FF00' : '#3D3D3D',
                 background: dragging ? 'rgba(200,255,0,0.04)' : '#1C1C1C',
               }}
             >
-              <input ref={fileInputRef} type="file" accept=".pdf" className="hidden" onChange={handleFileInput} />
-              {uploading ? (
+              <input ref={fileInputRef} type="file" accept=".pdf" multiple className="hidden" onChange={handleFileInput} />
+              {uploadProgress ? (
                 <>
                   <div className="w-10 h-10 rounded-2xl flex items-center justify-center animate-pulse" style={{ background: 'rgba(200,255,0,0.15)' }}>
                     <Sparkles size={20} style={{ color: '#C8FF00' }} />
                   </div>
                   <div className="text-center">
-                    <p className="text-sm font-semibold" style={{ color: '#C8FF00', fontFamily: 'Poppins, sans-serif' }}>Carregando para o Gemini...</p>
+                    <p className="text-sm font-semibold" style={{ color: '#C8FF00', fontFamily: 'Poppins, sans-serif' }}>
+                      Enviando {uploadProgress.current}/{uploadProgress.total} arquivos...
+                    </p>
                     <p className="text-xs mt-1" style={{ color: '#555555' }}>Aguarde um momento</p>
                   </div>
                 </>
@@ -219,7 +230,7 @@ export default function ConfiguracoesPage() {
                     <p className="text-sm font-semibold" style={{ color: '#FFFFFF', fontFamily: 'Poppins, sans-serif' }}>
                       {dragging ? 'Solte aqui!' : 'Clique ou arraste o PDF'}
                     </p>
-                    <p className="text-xs mt-1" style={{ color: '#555555' }}>Apenas arquivos .pdf</p>
+                    <p className="text-xs mt-1" style={{ color: '#555555' }}>Selecione um ou vários PDFs de uma vez</p>
                   </div>
                 </>
               )}
