@@ -23,6 +23,7 @@ import {
 import Link from 'next/link'
 import { toast } from 'sonner'
 import { Student } from '@/types'
+import { GenerateDietButton } from '@/components/diet/GenerateDietButton'
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts'
 
 
@@ -824,10 +825,7 @@ export default function AlunosPage() {
   })
 
   const releaseStudent = useMutation({
-    mutationFn: async (id: string) => {
-      await studentService.updateStatus(id, 'ativo')
-      await dietReviewService.markAsReviewed(id)
-    },
+    mutationFn: (id: string) => dietReviewService.release(id),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['students'] })
       qc.invalidateQueries({ queryKey: ['needs-diet-review'] })
@@ -1000,6 +998,9 @@ export default function AlunosPage() {
                         )}
                         <td className="px-4 py-3">
                           <div className="flex items-center gap-2 justify-end">
+                            {tab === 'espera' && !hasDiet && (
+                              <GenerateDietButton studentId={s.id} />
+                            )}
                             {tab === 'espera' && pendingPlanMap[s.id] && (
                               <Link href={`/prescricoes/${pendingPlanMap[s.id]}`}>
                                 <Button

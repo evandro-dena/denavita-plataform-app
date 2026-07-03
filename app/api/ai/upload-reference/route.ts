@@ -1,19 +1,22 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { GoogleGenAI } from '@google/genai'
-import { createClient } from '@supabase/supabase-js'
+import { createServiceClient, getSessionUser } from '@/lib/supabase/server'
 
 const gemini = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY })
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-)
-
 export async function POST(req: NextRequest) {
   try {
+    // 1. Exige sessão válida
+    const user = await getSessionUser()
+    if (!user) {
+      return NextResponse.json({ error: 'Não autenticado' }, { status: 401 })
+    }
+
+    const supabase = createServiceClient()
     const formData = await req.formData()
     const file = formData.get('file') as File | null
-    const nutriId = formData.get('nutri_id') as string | null
+    // 2. Dono da referência é SEMPRE o usuário da sessão — ignora nutri_id do form.
+    const nutriId = user.id
 
     if (!file) return NextResponse.json({ error: 'Arquivo não enviado' }, { status: 400 })
     if (!file.name.toLowerCase().endsWith('.pdf')) {

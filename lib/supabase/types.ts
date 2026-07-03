@@ -27,6 +27,7 @@ export type Tables = {
       id: string
       user_id: string
       sexo: string | null
+      data_nascimento: string | null
       idade: number | null
       peso: number | null
       altura: number | null
@@ -38,7 +39,9 @@ export type Tables = {
       come_no_trabalho: boolean | null
       condicao_suplemento: string | null
       suplementos_atuais: string[] | null
+      suplemento_outro: string | null
       alergias: string[] | null
+      alergia_outra: string | null
       doenca_cronica: Record<string, unknown> | null
       medicamento: Record<string, unknown> | null
       historico_lesao: Record<string, unknown> | null

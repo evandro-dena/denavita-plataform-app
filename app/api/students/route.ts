@@ -1,16 +1,19 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@supabase/supabase-js'
-
-// Usa service role para criar aluno (contorna RLS)
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-)
+import { createServiceClient, getSessionUser } from '@/lib/supabase/server'
 
 export async function POST(req: NextRequest) {
   try {
+    // 1. Exige sessão válida
+    const user = await getSessionUser()
+    if (!user) {
+      return NextResponse.json({ error: 'Não autenticado' }, { status: 401 })
+    }
+
     const data = await req.json()
 
+    // 2. O nutricionista é SEMPRE o usuário da sessão — ignora qualquer
+    //    nutritionist_id vindo do body do cliente.
+    const supabase = createServiceClient()
     const { data: created, error } = await supabase
       .from('profiles')
       .insert({
@@ -22,7 +25,7 @@ export async function POST(req: NextRequest) {
         ...(data.goal_label ? { goal_label: data.goal_label } : {}),
         ...(data.current_weight ? { current_weight: Number(data.current_weight) } : {}),
         ...(data.goal_weight ? { goal_weight: Number(data.goal_weight) } : {}),
-        nutritionist_id: data.nutritionist_id,
+        nutritionist_id: user.id,
         role: 'aluno',
         status: 'ativo',
       })

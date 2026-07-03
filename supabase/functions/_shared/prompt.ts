@@ -1,27 +1,12 @@
-import { DietPlan, Student, Anamnesis, Assessment } from '@/types'
-import { calcularIdade, traduzirCampo } from '@/constants/anamnesisLabels'
+// Porte (Deno) de buildPrompt — lib/api/ai.ts. Idêntico em comportamento.
+import { calcularIdade, traduzirCampo } from './anamnesis-labels.ts'
+import type { Student, Anamnesis, Assessment } from './types.ts'
 
 export interface StudentContext {
   student: Student
   anamnesis: Anamnesis | null
   lastAssessment: Assessment | null
   nutriId?: string
-}
-
-export const aiService = {
-  async generateDietPlan(context: StudentContext): Promise<Omit<DietPlan, 'id' | 'user_id' | 'nutritionist_id' | 'created_at' | 'updated_at'>> {
-    const prompt = buildPrompt(context)
-
-    const response = await fetch('/api/ai/generate-diet', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ prompt, nutri_id: context.nutriId }),
-    })
-
-    if (!response.ok) throw new Error('Erro ao gerar plano com IA')
-    const data = await response.json()
-    return data.plan
-  },
 }
 
 export function buildPrompt({ student, anamnesis, lastAssessment }: StudentContext): string {

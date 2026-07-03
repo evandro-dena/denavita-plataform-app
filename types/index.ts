@@ -24,7 +24,8 @@ export interface Anamnesis {
   id: string
   user_id: string
   sexo: string
-  idade: number
+  data_nascimento?: string // 'YYYY-MM-DD' — fonte da idade (gravada pelo app)
+  idade?: number // legado: o app não grava mais; idade é derivada de data_nascimento
   peso: number
   altura: number
   objetivo: string
@@ -35,7 +36,9 @@ export interface Anamnesis {
   come_no_trabalho: boolean
   condicao_suplemento: string
   suplementos_atuais: string[]
+  suplemento_outro?: string // texto livre do "Outro?" de suplementos
   alergias: string[]
+  alergia_outra?: string // texto livre do "Outra?" de alergias
   doenca_cronica: { tem: boolean; qual?: string }
   medicamento: { usa: boolean; qual?: string }
   historico_lesao: { tem: boolean; quais?: string }
