@@ -26,8 +26,9 @@ export default function PrescricoesPage() {
   const [search, setSearch] = useState('')
 
   const { data: plans = [], isLoading } = useQuery({
-    queryKey: ['diet-plans-all'],
-    queryFn: () => mealPlanService.listAll(NUTRI_ID ?? ''),
+    queryKey: ['diet-plans-all', NUTRI_ID],
+    queryFn: () => NUTRI_ID ? mealPlanService.listAll(NUTRI_ID) : Promise.resolve([]),
+    enabled: !!NUTRI_ID,
   })
 
   const deletePlan = useMutation({
