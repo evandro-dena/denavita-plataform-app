@@ -1,7 +1,7 @@
 'use client'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { LayoutDashboard, Users, UtensilsCrossed, BookOpen, Settings, LogOut, Dumbbell, Megaphone } from 'lucide-react'
+import { LayoutDashboard, Users, UtensilsCrossed, BookOpen, Settings, LogOut, Dumbbell, Megaphone, Video } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 const NAV = [
@@ -10,6 +10,7 @@ const NAV = [
   { href: '/prescricoes', icon: UtensilsCrossed, label: 'Nutrição' },
   { href: '/comunicacao', icon: Megaphone, label: 'Comunicação' },
   { href: '/receitas', icon: BookOpen, label: 'Receitas' },
+  { href: '/videoaulas', icon: Video, label: 'Videoaulas' },
   { href: '/configuracoes', icon: Settings, label: 'Configurações' },
 ]
 

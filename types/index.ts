@@ -194,3 +194,17 @@ export interface DashboardStats {
   pending_exams: number
   waiting_list: number
 }
+
+export interface VideoLesson {
+  id: string
+  title: string
+  description?: string | null
+  youtube_url?: string | null
+  video_source: 'youtube' | 'upload'
+  storage_path?: string | null
+  sort_order: number
+  is_published: boolean
+  created_by: string
+  created_at: string
+  updated_at: string
+}
