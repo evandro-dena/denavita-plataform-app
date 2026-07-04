@@ -5,6 +5,7 @@ export type VideoLessonInput = {
   title: string
   description?: string
   youtube_url: string
+  specialty_id?: string | null
 }
 
 export const videoLessonService = {
@@ -29,6 +30,7 @@ export const videoLessonService = {
         description: input.description || null,
         youtube_url: input.youtube_url,
         video_source: 'youtube',
+        specialty_id: input.specialty_id || null,
         sort_order: sortOrder,
         created_by: nutriId,
         updated_at: new Date().toISOString(),

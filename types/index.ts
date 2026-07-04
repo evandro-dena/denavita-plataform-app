@@ -202,6 +202,19 @@ export interface VideoLesson {
   youtube_url?: string | null
   video_source: 'youtube' | 'upload'
   storage_path?: string | null
+  specialty_id?: string | null
+  sort_order: number
+  is_published: boolean
+  created_by: string
+  created_at: string
+  updated_at: string
+}
+
+export interface Specialty {
+  id: string
+  name: string
+  icon?: string | null
+  color?: string | null
   sort_order: number
   is_published: boolean
   created_by: string
