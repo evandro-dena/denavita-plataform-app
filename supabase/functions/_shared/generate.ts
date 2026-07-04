@@ -88,7 +88,15 @@ export async function generateDietForStudent(
   const plan = (await generatePlanFromPrompt(prompt, nutritionistId, supabase)) as AIPlan
 
   // 3. Persiste o plano (source='ia', type='textos_livres' — formato único c/ a manual)
-  const planName = `Dieta IA — ${new Date().toLocaleDateString('pt-BR')}`
+  // Nome do plano = nome do aluno em Title Case (nome + sobrenome), sem data.
+  // Ex.: "joão SILVA" -> "João Silva". Fallback p/ 'Dieta IA' se sem nome.
+  const planName =
+    (student.name ?? '')
+      .trim()
+      .split(/\s+/)
+      .filter(Boolean)
+      .map((w) => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase())
+      .join(' ') || 'Dieta IA'
   const { data: dp, error: dpErr } = await supabase
     .from('diet_plans')
     .insert({
