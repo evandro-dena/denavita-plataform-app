@@ -10,7 +10,7 @@ import { Skeleton } from '@/components/ui/skeleton'
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
-import { Plus, Search, Pencil, Send, Copy, Trash2, FileText, ChevronDown } from 'lucide-react'
+import { Plus, Search, Pencil, Send, Copy, Trash2, FileText, ChevronDown, Check } from 'lucide-react'
 import Link from 'next/link'
 import { toast } from 'sonner'
 import { DietPlan } from '@/types'
@@ -20,10 +20,29 @@ function typeLabel(type: DietPlan['type']) {
   return type === 'textos_livres' ? 'Textos livres' : 'Por alimentos'
 }
 
+// Checkbox inline (não há componente ui/checkbox no projeto).
+function CheckBox({ checked, onClick }: { checked: boolean; onClick: (e: React.MouseEvent) => void }) {
+  return (
+    <button
+      onClick={onClick}
+      role="checkbox"
+      aria-checked={checked}
+      className="w-[18px] h-[18px] rounded-[5px] flex items-center justify-center transition-all flex-shrink-0"
+      style={{
+        background: checked ? '#C8FF00' : 'transparent',
+        border: `1.5px solid ${checked ? '#C8FF00' : '#3D3D3D'}`,
+      }}
+    >
+      {checked && <Check size={12} strokeWidth={3} style={{ color: '#1C1C1C' }} />}
+    </button>
+  )
+}
+
 export default function PrescricoesPage() {
   const NUTRI_ID = useNutriId()
   const qc = useQueryClient()
   const [search, setSearch] = useState('')
+  const [selected, setSelected] = useState<Set<string>>(new Set())
 
   const { data: plans = [], isLoading } = useQuery({
     queryKey: ['diet-plans-all', NUTRI_ID],
@@ -44,7 +63,33 @@ export default function PrescricoesPage() {
     onSuccess: () => { qc.invalidateQueries({ queryKey: ['diet-plans-all'] }); toast.success('Plano clonado!') },
   })
 
+  const deleteSelected = useMutation({
+    mutationFn: (ids: string[]) => mealPlanService.deleteMany(ids),
+    onSuccess: (_data, ids) => {
+      qc.invalidateQueries({ queryKey: ['diet-plans-all'] })
+      setSelected(new Set())
+      toast.success(`${ids.length} plano${ids.length > 1 ? 's excluídos' : ' excluído'}.`)
+    },
+  })
+
   const filtered = plans.filter(p => p.name.toLowerCase().includes(search.toLowerCase()))
+
+  const allSelected = filtered.length > 0 && filtered.every(p => selected.has(p.id))
+
+  const toggle = (id: string) =>
+    setSelected(prev => {
+      const next = new Set(prev)
+      next.has(id) ? next.delete(id) : next.add(id)
+      return next
+    })
+
+  const toggleAll = () =>
+    setSelected(allSelected ? new Set() : new Set(filtered.map(p => p.id)))
+
+  const removeSelected = () => {
+    if (confirm(`Excluir ${selected.size} plano${selected.size > 1 ? 's' : ''}? Esta ação não pode ser desfeita.`))
+      deleteSelected.mutate([...selected])
+  }
 
   return (
     <div>
@@ -66,6 +111,26 @@ export default function PrescricoesPage() {
           className="pl-9 border" style={{ background: '#262626', color: '#FFFFFF', borderRadius: '12px', borderColor: '#3D3D3D' }} />
       </div>
 
+      {/* Barra de ação em massa */}
+      {selected.size > 0 && (
+        <div className="flex items-center justify-between mb-3 px-4 py-2.5 rounded-xl"
+          style={{ background: 'rgba(200,255,0,0.06)', border: '1px solid rgba(200,255,0,0.25)' }}>
+          <span className="text-sm font-medium" style={{ color: '#C8FF00', fontFamily: 'Poppins, sans-serif' }}>
+            {selected.size} selecionado{selected.size > 1 ? 's' : ''}
+          </span>
+          <div className="flex items-center gap-2">
+            <button onClick={() => setSelected(new Set())}
+              className="text-xs px-3 py-1.5 rounded-lg transition-all hover:bg-white/10" style={{ color: '#888888' }}>
+              Limpar
+            </button>
+            <Button size="sm" disabled={deleteSelected.isPending} onClick={removeSelected}
+              style={{ background: 'rgba(239,68,68,0.12)', color: '#EF4444', border: '1px solid rgba(239,68,68,0.3)', borderRadius: '10px', fontWeight: 600 }}>
+              <Trash2 size={13} className="mr-1.5" /> {deleteSelected.isPending ? 'Excluindo...' : 'Excluir selecionados'}
+            </Button>
+          </div>
+        </div>
+      )}
+
       <div className="rounded-2xl border overflow-hidden" style={{ background: '#262626', borderColor: '#3D3D3D' }}>
         {isLoading ? (
           <div className="p-6 flex flex-col gap-3">
@@ -85,14 +150,22 @@ export default function PrescricoesPage() {
           <table className="w-full">
             <thead>
               <tr style={{ borderBottom: '1px solid #2A2A2A' }}>
+                <th className="px-5 py-3 w-[1%]">
+                  <CheckBox checked={allSelected} onClick={toggleAll} />
+                </th>
                 {['Alimento', 'Tipo', 'KCal', 'Prot.', 'Carb.', 'Gord.', ''].map(h => (
                   <th key={h} className="text-left px-5 py-3 text-xs font-medium uppercase tracking-wide" style={{ color: '#555555' }}>{h}</th>
                 ))}
               </tr>
             </thead>
             <tbody>
-              {filtered.map(plan => (
-                <tr key={plan.id} className="transition-all" style={{ borderBottom: '1px solid #2A2A2A' }}>
+              {filtered.map(plan => {
+                const isChecked = selected.has(plan.id)
+                return (
+                <tr key={plan.id} className="transition-all" style={{ borderBottom: '1px solid #2A2A2A', background: isChecked ? 'rgba(200,255,0,0.04)' : 'transparent' }}>
+                  <td className="px-5 py-4">
+                    <CheckBox checked={isChecked} onClick={() => toggle(plan.id)} />
+                  </td>
                   <td className="px-5 py-4">
                     <p className="text-sm font-medium" style={{ color: '#FFFFFF' }}>{plan.name}</p>
                     <p className="text-xs mt-0.5" style={{ color: '#555555' }}>
@@ -142,7 +215,8 @@ export default function PrescricoesPage() {
                     </div>
                   </td>
                 </tr>
-              ))}
+                )
+              })}
             </tbody>
           </table>
         )}

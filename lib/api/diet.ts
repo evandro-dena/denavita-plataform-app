@@ -144,6 +144,11 @@ export const mealPlanService = {
     await supabase.from('diet_plans').delete().eq('id', id)
   },
 
+  async deleteMany(ids: string[]): Promise<void> {
+    if (!ids.length) return
+    await supabase.from('diet_plans').delete().in('id', ids)
+  },
+
   async upsertMealPlan(plan: Partial<DietPlan>): Promise<DietPlan> {
     const { meals, ...planData } = plan
 
