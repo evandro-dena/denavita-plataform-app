@@ -4,24 +4,24 @@ import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { videoLessonService } from '@/lib/api/videoLessons'
 import { specialtyService } from '@/lib/api/specialties'
+import { moduleService } from '@/lib/api/modules'
 import { getYoutubeId, isValidYoutubeUrl, youtubeThumb } from '@/lib/youtube'
 import Topbar from '@/components/layout/Topbar'
 import { Button } from '@/components/ui/button'
 import { Switch } from '@/components/ui/switch'
 import { Skeleton } from '@/components/ui/skeleton'
 import {
-  Plus, Pencil, Trash2, ChevronUp, ChevronDown, Video, X, ExternalLink, ImagePlus,
+  Plus, Pencil, Trash2, ChevronUp, ChevronDown, Video, X, ExternalLink, ImagePlus, FolderPlus,
   Layers, Settings2, UtensilsCrossed, Brain, Dumbbell, Heart, BookOpen, Activity, Salad, Sparkles,
 } from 'lucide-react'
 import { toast } from 'sonner'
-import { VideoLesson, Specialty } from '@/types'
+import { VideoLesson, Specialty, Module } from '@/types'
 
-// ─── Estilos compartilhados (padrão da plataforma) ───────────────────
+// ─── Estilos compartilhados ──────────────────────────────────────────
 const iCls = 'w-full px-3 py-2.5 rounded-xl border text-sm outline-none focus:ring-1 focus:ring-[#C8FF00] transition-all'
 const iStyle = { background: '#1C1C1C', color: '#FFFFFF', borderColor: '#3D3D3D' }
 const lblCls = 'text-xs uppercase tracking-wide mb-1 block'
 
-// Ícones selecionáveis p/ as especialidades (chave = valor gravado em specialties.icon).
 const ICON_OPTIONS: { key: string; Icon: React.ElementType }[] = [
   { key: 'nutricao', Icon: UtensilsCrossed },
   { key: 'psicologia', Icon: Brain },
@@ -33,7 +33,6 @@ const ICON_OPTIONS: { key: string; Icon: React.ElementType }[] = [
   { key: 'geral', Icon: Sparkles },
 ]
 const ICON_MAP: Record<string, React.ElementType> = Object.fromEntries(ICON_OPTIONS.map(o => [o.key, o.Icon]))
-
 const COLOR_OPTIONS = ['#C8FF00', '#F59E0B', '#3B82F6', '#EC4899', '#10B981', '#A78BFA', '#EF4444']
 const DEFAULT_COLOR = '#C8FF00'
 
@@ -46,29 +45,34 @@ export default function VideoaulasPage() {
   const NUTRI_ID = useNutriId()
   const qc = useQueryClient()
 
-  const { data: lessons = [], isLoading: loadingLessons } = useQuery({
-    queryKey: ['video-lessons'],
-    queryFn: () => videoLessonService.list(),
-  })
-  const { data: specialties = [], isLoading: loadingSpecs } = useQuery({
-    queryKey: ['specialties'],
-    queryFn: () => specialtyService.list(),
-  })
-  const isLoading = loadingLessons || loadingSpecs
+  const { data: lessons = [], isLoading: loadingLessons } = useQuery({ queryKey: ['video-lessons'], queryFn: () => videoLessonService.list() })
+  const { data: specialties = [], isLoading: loadingSpecs } = useQuery({ queryKey: ['specialties'], queryFn: () => specialtyService.list() })
+  const { data: modules = [], isLoading: loadingMods } = useQuery({ queryKey: ['modules'], queryFn: () => moduleService.list() })
+  const isLoading = loadingLessons || loadingSpecs || loadingMods
 
-  // ═══ Modal de VÍDEO (novo / editar) ═══════════════════════════════
+  const moduleById = new Map(modules.map(m => [m.id, m]))
+  const specialtyById = new Map(specialties.map(s => [s.id, s]))
+
+  // ═══ Modal de VÍDEO ═══════════════════════════════════════════════
   const [lessonModal, setLessonModal] = useState(false)
   const [lessonEditId, setLessonEditId] = useState<string | null>(null)
-  const [lessonForm, setLessonForm] = useState({ title: '', description: '', youtube_url: '', specialty_id: '' })
+  const [lessonForm, setLessonForm] = useState({ title: '', description: '', youtube_url: '', specialty_id: '', module_id: '' })
 
-  const openNewLesson = (specialtyId = '') => {
+  const openNewLesson = (specialtyId = '', moduleId = '') => {
     setLessonEditId(null)
-    setLessonForm({ title: '', description: '', youtube_url: '', specialty_id: specialtyId })
+    setLessonForm({ title: '', description: '', youtube_url: '', specialty_id: specialtyId, module_id: moduleId })
     setLessonModal(true)
   }
   const openEditLesson = (v: VideoLesson) => {
     setLessonEditId(v.id)
-    setLessonForm({ title: v.title, description: v.description ?? '', youtube_url: v.youtube_url ?? '', specialty_id: v.specialty_id ?? '' })
+    const mod = v.module_id ? moduleById.get(v.module_id) : undefined
+    setLessonForm({
+      title: v.title,
+      description: v.description ?? '',
+      youtube_url: v.youtube_url ?? '',
+      specialty_id: mod ? mod.specialty_id : (v.specialty_id ?? ''),
+      module_id: v.module_id ?? '',
+    })
     setLessonModal(true)
   }
 
@@ -77,16 +81,19 @@ export default function VideoaulasPage() {
       const title = lessonForm.title.trim()
       const youtube_url = lessonForm.youtube_url.trim()
       const description = lessonForm.description.trim()
-      const specialty_id = lessonForm.specialty_id || null
       if (!title) throw new Error('Informe o título da aula')
       if (!isValidYoutubeUrl(youtube_url)) throw new Error('Link do YouTube inválido')
+      // specialty_id derivado do módulo escolhido (mantém os dois consistentes).
+      const mod = lessonForm.module_id ? moduleById.get(lessonForm.module_id) : undefined
+      const module_id = lessonForm.module_id || null
+      const specialty_id = mod ? mod.specialty_id : (lessonForm.specialty_id || null)
 
       if (lessonEditId) {
-        await videoLessonService.update(lessonEditId, { title, description, youtube_url, specialty_id })
+        await videoLessonService.update(lessonEditId, { title, description, youtube_url, specialty_id, module_id })
       } else {
         if (!NUTRI_ID) throw new Error('Sessão ainda carregando, tente de novo')
         const nextOrder = lessons.reduce((m, l) => Math.max(m, l.sort_order), -1) + 1
-        await videoLessonService.create({ title, description, youtube_url, specialty_id }, NUTRI_ID, nextOrder)
+        await videoLessonService.create({ title, description, youtube_url, specialty_id, module_id }, NUTRI_ID, nextOrder)
       }
     },
     onSuccess: () => {
@@ -109,8 +116,7 @@ export default function VideoaulasPage() {
   })
   const moveLesson = useMutation({
     mutationFn: ({ list, index, dir }: { list: VideoLesson[]; index: number; dir: -1 | 1 }) => {
-      const a = list[index]
-      const b = list[index + dir]
+      const a = list[index], b = list[index + dir]
       if (!a || !b) return Promise.resolve()
       return videoLessonService.swapOrder({ id: a.id, sort_order: a.sort_order }, { id: b.id, sort_order: b.sort_order })
     },
@@ -118,23 +124,73 @@ export default function VideoaulasPage() {
     onError: (e: Error) => toast.error(e.message),
   })
 
-  // ═══ Modal de ESPECIALIDADES (gestão) ═════════════════════════════
+  // ═══ Modal de MÓDULO ══════════════════════════════════════════════
+  const [moduleModal, setModuleModal] = useState(false)
+  const [moduleEditId, setModuleEditId] = useState<string | null>(null)
+  const [moduleSpecialtyId, setModuleSpecialtyId] = useState('')
+  const [moduleForm, setModuleForm] = useState({ name: '', description: '' })
+
+  const openNewModule = (specialtyId: string) => {
+    setModuleEditId(null); setModuleSpecialtyId(specialtyId); setModuleForm({ name: '', description: '' }); setModuleModal(true)
+  }
+  const openEditModule = (m: Module) => {
+    setModuleEditId(m.id); setModuleSpecialtyId(m.specialty_id); setModuleForm({ name: m.name, description: m.description ?? '' }); setModuleModal(true)
+  }
+
+  const saveModule = useMutation({
+    mutationFn: async () => {
+      const name = moduleForm.name.trim()
+      const description = moduleForm.description.trim()
+      if (!name) throw new Error('Informe o nome do módulo')
+      if (moduleEditId) {
+        await moduleService.update(moduleEditId, { name, description })
+      } else {
+        if (!NUTRI_ID) throw new Error('Sessão ainda carregando, tente de novo')
+        const nextOrder = modules.filter(m => m.specialty_id === moduleSpecialtyId).reduce((mx, m) => Math.max(mx, m.sort_order), -1) + 1
+        await moduleService.create({ specialty_id: moduleSpecialtyId, name, description }, NUTRI_ID, nextOrder)
+      }
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['modules'] })
+      toast.success(moduleEditId ? 'Módulo atualizado!' : 'Módulo criado!')
+      setModuleModal(false)
+    },
+    onError: (e: Error) => toast.error(e.message),
+  })
+
+  const removeModule = useMutation({
+    mutationFn: (id: string) => moduleService.remove(id),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['modules'] })
+      qc.invalidateQueries({ queryKey: ['video-lessons'] }) // vídeos ficam sem módulo (FK ON DELETE SET NULL)
+      toast.success('Módulo removido.')
+    },
+    onError: (e: Error) => toast.error(e.message),
+  })
+  const togglePublishModule = useMutation({
+    mutationFn: ({ id, val }: { id: string; val: boolean }) => moduleService.setPublished(id, val),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['modules'] }),
+    onError: (e: Error) => toast.error(e.message),
+  })
+  const moveModule = useMutation({
+    mutationFn: ({ list, index, dir }: { list: Module[]; index: number; dir: -1 | 1 }) => {
+      const a = list[index], b = list[index + dir]
+      if (!a || !b) return Promise.resolve()
+      return moduleService.swapOrder({ id: a.id, sort_order: a.sort_order }, { id: b.id, sort_order: b.sort_order })
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['modules'] }),
+    onError: (e: Error) => toast.error(e.message),
+  })
+
+  // ═══ Modal de ESPECIALIDADE ═══════════════════════════════════════
   const [specModal, setSpecModal] = useState(false)
   const [specEditId, setSpecEditId] = useState<string | null>(null)
   const [specForm, setSpecForm] = useState<{ name: string; icon: string; color: string; image_url: string }>({ name: '', icon: '', color: '', image_url: '' })
-  const [specOriginalImage, setSpecOriginalImage] = useState('') // capa ao abrir edição (p/ limpar do bucket se trocar)
+  const [specOriginalImage, setSpecOriginalImage] = useState('')
   const [uploadingCover, setUploadingCover] = useState(false)
 
-  const resetSpecForm = () => {
-    setSpecEditId(null)
-    setSpecForm({ name: '', icon: '', color: '', image_url: '' })
-    setSpecOriginalImage('')
-  }
-  const editSpec = (s: Specialty) => {
-    setSpecEditId(s.id)
-    setSpecForm({ name: s.name, icon: s.icon ?? '', color: s.color ?? '', image_url: s.image_url ?? '' })
-    setSpecOriginalImage(s.image_url ?? '')
-  }
+  const resetSpecForm = () => { setSpecEditId(null); setSpecForm({ name: '', icon: '', color: '', image_url: '' }); setSpecOriginalImage('') }
+  const editSpec = (s: Specialty) => { setSpecEditId(s.id); setSpecForm({ name: s.name, icon: s.icon ?? '', color: s.color ?? '', image_url: s.image_url ?? '' }); setSpecOriginalImage(s.image_url ?? '') }
 
   const onPickCover = async (file: File | null) => {
     if (!file) return
@@ -145,11 +201,8 @@ export default function VideoaulasPage() {
       const url = await specialtyService.uploadCover(file)
       setSpecForm(p => ({ ...p, image_url: url }))
       toast.success('Capa enviada!')
-    } catch (e) {
-      toast.error(e instanceof Error ? e.message : 'Falha no upload da capa')
-    } finally {
-      setUploadingCover(false)
-    }
+    } catch (e) { toast.error(e instanceof Error ? e.message : 'Falha no upload da capa') }
+    finally { setUploadingCover(false) }
   }
   const clearCover = () => setSpecForm(p => ({ ...p, image_url: '' }))
 
@@ -166,27 +219,17 @@ export default function VideoaulasPage() {
         const nextOrder = specialties.reduce((m, s) => Math.max(m, s.sort_order), -1) + 1
         await specialtyService.create(patch, NUTRI_ID, nextOrder)
       }
-      // Trocou/removeu a capa → apaga o arquivo antigo do bucket (best-effort).
-      if (specOriginalImage && specOriginalImage !== (image_url ?? '')) {
-        specialtyService.removeCover(specOriginalImage).catch(() => {})
-      }
+      if (specOriginalImage && specOriginalImage !== (image_url ?? '')) specialtyService.removeCover(specOriginalImage).catch(() => {})
     },
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ['specialties'] })
-      toast.success(specEditId ? 'Especialidade atualizada!' : 'Especialidade criada!')
-      resetSpecForm()
-    },
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['specialties'] }); toast.success(specEditId ? 'Especialidade atualizada!' : 'Especialidade criada!'); resetSpecForm() },
     onError: (e: Error) => toast.error(e.message),
   })
-
   const removeSpec = useMutation({
-    mutationFn: async (s: Specialty) => {
-      await specialtyService.remove(s.id)
-      if (s.image_url) specialtyService.removeCover(s.image_url).catch(() => {}) // limpa a capa do bucket
-    },
+    mutationFn: async (s: Specialty) => { await specialtyService.remove(s.id); if (s.image_url) specialtyService.removeCover(s.image_url).catch(() => {}) },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['specialties'] })
-      qc.invalidateQueries({ queryKey: ['video-lessons'] }) // vídeos ficam sem categoria (FK ON DELETE SET NULL)
+      qc.invalidateQueries({ queryKey: ['modules'] })       // módulos da especialidade somem (cascade)
+      qc.invalidateQueries({ queryKey: ['video-lessons'] })
       toast.success('Especialidade removida.')
     },
     onError: (e: Error) => toast.error(e.message),
@@ -198,8 +241,7 @@ export default function VideoaulasPage() {
   })
   const moveSpec = useMutation({
     mutationFn: ({ index, dir }: { index: number; dir: -1 | 1 }) => {
-      const a = specialties[index]
-      const b = specialties[index + dir]
+      const a = specialties[index], b = specialties[index + dir]
       if (!a || !b) return Promise.resolve()
       return specialtyService.swapOrder({ id: a.id, sort_order: a.sort_order }, { id: b.id, sort_order: b.sort_order })
     },
@@ -207,58 +249,41 @@ export default function VideoaulasPage() {
     onError: (e: Error) => toast.error(e.message),
   })
 
-  // ─── Agrupamento por especialidade ──────────────────────────────────
-  const known = new Set(specialties.map(s => s.id))
-  const groups = specialties.map(s => ({ specialty: s, videos: lessons.filter(l => l.specialty_id === s.id) }))
-  const uncategorized = lessons.filter(l => !l.specialty_id || !known.has(l.specialty_id))
+  // ─── Vídeos "órfãos" (sem especialidade e sem módulo válidos) ───────
+  const uncategorized = lessons.filter(l =>
+    (!l.module_id || !moduleById.has(l.module_id)) && (!l.specialty_id || !specialtyById.has(l.specialty_id)))
 
   const previewId = getYoutubeId(lessonForm.youtube_url)
+  const modulesForForm = lessonForm.specialty_id ? modules.filter(m => m.specialty_id === lessonForm.specialty_id) : []
 
-  // Render de um vídeo (reutilizado em cada grupo). `list` = vídeos do grupo (p/ reordenar).
+  // Render de um vídeo (reutilizado). `list` = vídeos do mesmo grupo (p/ reordenar).
   const renderVideo = (v: VideoLesson, i: number, list: VideoLesson[]) => {
     const vid = getYoutubeId(v.youtube_url)
     return (
-      <div key={v.id} className="rounded-xl border p-3 flex items-center gap-3"
-        style={{ background: '#1F1F1F', borderColor: '#2A2A2A', opacity: v.is_published ? 1 : 0.6 }}>
+      <div key={v.id} className="rounded-xl border p-2.5 flex items-center gap-3" style={{ background: '#171717', borderColor: '#2A2A2A', opacity: v.is_published ? 1 : 0.6 }}>
         <div className="flex flex-col gap-0.5 flex-shrink-0">
-          <button disabled={i === 0 || moveLesson.isPending} onClick={() => moveLesson.mutate({ list, index: i, dir: -1 })}
-            className="p-0.5 rounded transition-all hover:bg-white/10 disabled:opacity-30 disabled:cursor-not-allowed" title="Subir">
-            <ChevronUp size={14} style={{ color: '#888888' }} />
-          </button>
-          <button disabled={i === list.length - 1 || moveLesson.isPending} onClick={() => moveLesson.mutate({ list, index: i, dir: 1 })}
-            className="p-0.5 rounded transition-all hover:bg-white/10 disabled:opacity-30 disabled:cursor-not-allowed" title="Descer">
-            <ChevronDown size={14} style={{ color: '#888888' }} />
-          </button>
+          <button disabled={i === 0 || moveLesson.isPending} onClick={() => moveLesson.mutate({ list, index: i, dir: -1 })} className="p-0.5 rounded hover:bg-white/10 disabled:opacity-30 disabled:cursor-not-allowed" title="Subir"><ChevronUp size={14} style={{ color: '#888888' }} /></button>
+          <button disabled={i === list.length - 1 || moveLesson.isPending} onClick={() => moveLesson.mutate({ list, index: i, dir: 1 })} className="p-0.5 rounded hover:bg-white/10 disabled:opacity-30 disabled:cursor-not-allowed" title="Descer"><ChevronDown size={14} style={{ color: '#888888' }} /></button>
         </div>
-        <div className="w-24 h-14 rounded-lg overflow-hidden flex-shrink-0 flex items-center justify-center" style={{ background: '#1C1C1C' }}>
+        <div className="w-20 h-12 rounded-lg overflow-hidden flex-shrink-0 flex items-center justify-center" style={{ background: '#1C1C1C' }}>
           {vid ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img src={youtubeThumb(vid)} alt={v.title} className="w-full h-full object-cover" />
-          ) : <Video size={20} style={{ color: '#555555' }} />}
+          ) : <Video size={18} style={{ color: '#555555' }} />}
         </div>
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2">
-            <p className="text-sm font-semibold truncate" style={{ color: '#FFFFFF', fontFamily: 'Poppins, sans-serif' }}>{v.title}</p>
+            <p className="text-sm font-medium truncate" style={{ color: '#FFFFFF' }}>{v.title}</p>
             {!v.is_published && <span className="text-xs px-2 py-0.5 rounded-full flex-shrink-0" style={{ background: 'rgba(136,136,136,0.15)', color: '#888888' }}>Rascunho</span>}
           </div>
-          {v.description && <p className="text-xs mt-0.5 truncate" style={{ color: '#888888' }}>{v.description}</p>}
           {v.youtube_url && (
-            <a href={v.youtube_url} target="_blank" rel="noopener noreferrer"
-              className="text-xs mt-1 inline-flex items-center gap-1 hover:underline" style={{ color: '#C8FF00' }}>
-              Abrir no YouTube <ExternalLink size={10} />
-            </a>
+            <a href={v.youtube_url} target="_blank" rel="noopener noreferrer" className="text-xs mt-0.5 inline-flex items-center gap-1 hover:underline" style={{ color: '#C8FF00' }}>YouTube <ExternalLink size={9} /></a>
           )}
         </div>
         <div className="flex items-center gap-2 flex-shrink-0">
-          <Switch checked={v.is_published} disabled={togglePublishLesson.isPending}
-            onCheckedChange={val => togglePublishLesson.mutate({ id: v.id, val })} />
-          <button onClick={() => openEditLesson(v)} className="p-2 rounded-lg transition-all hover:bg-white/10" title="Editar">
-            <Pencil size={14} style={{ color: '#888888' }} />
-          </button>
-          <button onClick={() => { if (confirm(`Remover "${v.title}"?`)) removeLesson.mutate(v.id) }}
-            className="p-2 rounded-lg transition-all hover:bg-white/10" title="Remover">
-            <Trash2 size={14} style={{ color: '#EF4444' }} />
-          </button>
+          <Switch checked={v.is_published} disabled={togglePublishLesson.isPending} onCheckedChange={val => togglePublishLesson.mutate({ id: v.id, val })} />
+          <button onClick={() => openEditLesson(v)} className="p-1.5 rounded-lg hover:bg-white/10" title="Editar"><Pencil size={13} style={{ color: '#888888' }} /></button>
+          <button onClick={() => { if (confirm(`Remover "${v.title}"?`)) removeLesson.mutate(v.id) }} className="p-1.5 rounded-lg hover:bg-white/10" title="Remover"><Trash2 size={13} style={{ color: '#EF4444' }} /></button>
         </div>
       </div>
     )
@@ -268,53 +293,44 @@ export default function VideoaulasPage() {
     <div>
       <Topbar
         title="Videoaulas"
-        subtitle={`${specialties.length} especialidade${specialties.length !== 1 ? 's' : ''} · ${lessons.length} aula${lessons.length !== 1 ? 's' : ''}`}
+        subtitle={`${specialties.length} especialidade${specialties.length !== 1 ? 's' : ''} · ${modules.length} módulo${modules.length !== 1 ? 's' : ''} · ${lessons.length} aula${lessons.length !== 1 ? 's' : ''}`}
         action={
           <div className="flex items-center gap-2">
-            <Button variant="outline" onClick={() => { resetSpecForm(); setSpecModal(true) }}
-              style={{ borderColor: '#3D3D3D', color: '#FFFFFF', background: '#262626', borderRadius: '12px', fontWeight: 600 }}>
+            <Button variant="outline" onClick={() => { resetSpecForm(); setSpecModal(true) }} style={{ borderColor: '#3D3D3D', color: '#FFFFFF', background: '#262626', borderRadius: '12px', fontWeight: 600 }}>
               <Settings2 size={16} className="mr-2" /> Especialidades
             </Button>
-            <Button onClick={() => openNewLesson()}
-              style={{ background: '#C8FF00', color: '#1C1C1C', borderRadius: '12px', fontFamily: 'Poppins, sans-serif', fontWeight: 600 }}>
+            <Button onClick={() => openNewLesson()} style={{ background: '#C8FF00', color: '#1C1C1C', borderRadius: '12px', fontFamily: 'Poppins, sans-serif', fontWeight: 600 }}>
               <Plus size={16} className="mr-2" /> Nova aula
             </Button>
           </div>
         }
       />
 
-      {/* Listagem agrupada */}
       <div className="flex flex-col gap-4">
         {isLoading ? (
           Array(2).fill(0).map((_, i) => <Skeleton key={i} className="h-40 rounded-2xl" style={{ background: '#262626' }} />)
         ) : specialties.length === 0 && lessons.length === 0 ? (
-          <div className="rounded-2xl border p-16 text-center flex flex-col items-center gap-3"
-            style={{ background: '#262626', borderColor: '#3D3D3D', color: '#555555' }}>
+          <div className="rounded-2xl border p-16 text-center flex flex-col items-center gap-3" style={{ background: '#262626', borderColor: '#3D3D3D', color: '#555555' }}>
             <Layers size={36} className="opacity-30" />
             <p className="text-sm">Nenhuma especialidade ou aula ainda.</p>
-            <Button size="sm" onClick={() => { resetSpecForm(); setSpecModal(true) }}
-              style={{ background: '#C8FF00', color: '#1C1C1C', borderRadius: '10px', fontFamily: 'Poppins, sans-serif' }}>
+            <Button size="sm" onClick={() => { resetSpecForm(); setSpecModal(true) }} style={{ background: '#C8FF00', color: '#1C1C1C', borderRadius: '10px', fontFamily: 'Poppins, sans-serif' }}>
               <Plus size={14} className="mr-1.5" /> Criar primeira especialidade
             </Button>
           </div>
         ) : (
           <>
-            {groups.map(({ specialty, videos }) => {
+            {specialties.map(specialty => {
               const color = specialty.color || DEFAULT_COLOR
               const hasCover = !!specialty.image_url
+              const specModules = modules.filter(m => m.specialty_id === specialty.id)
+              const semModulo = lessons.filter(l => (!l.module_id || !moduleById.has(l.module_id)) && l.specialty_id === specialty.id)
               return (
                 <div key={specialty.id} className="rounded-2xl border overflow-hidden relative"
-                  style={{
-                    background: '#262626',
-                    borderColor: '#3D3D3D',
-                    opacity: specialty.is_published ? 1 : 0.6,
-                    ...(hasCover ? { backgroundImage: `url(${specialty.image_url})`, backgroundSize: 'cover', backgroundPosition: 'center' } : {}),
-                  }}>
-                  {/* Overlay escuro por cima da capa (legibilidade) */}
-                  {hasCover && <div className="absolute inset-0 pointer-events-none" style={{ background: 'linear-gradient(180deg, rgba(0,0,0,0.55) 0%, rgba(28,28,28,0.92) 100%)' }} />}
+                  style={{ background: '#262626', borderColor: '#3D3D3D', opacity: specialty.is_published ? 1 : 0.6, ...(hasCover ? { backgroundImage: `url(${specialty.image_url})`, backgroundSize: 'cover', backgroundPosition: 'center' } : {}) }}>
+                  {hasCover && <div className="absolute inset-0 pointer-events-none" style={{ background: 'linear-gradient(180deg, rgba(0,0,0,0.55) 0%, rgba(28,28,28,0.94) 100%)' }} />}
 
                   <div className="relative">
-                    {/* Header do card */}
+                    {/* Header da especialidade */}
                     <div className="flex items-center justify-between px-4 py-3 border-b" style={{ borderColor: hasCover ? 'rgba(255,255,255,0.12)' : '#3D3D3D', borderLeft: `3px solid ${color}` }}>
                       <div className="flex items-center gap-3">
                         <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: hasCover ? 'rgba(0,0,0,0.35)' : `${color}1f` }}>
@@ -325,41 +341,82 @@ export default function VideoaulasPage() {
                             <p className="text-sm font-semibold" style={{ color: '#FFFFFF', fontFamily: 'Poppins, sans-serif', textShadow: hasCover ? '0 1px 4px rgba(0,0,0,0.85)' : undefined }}>{specialty.name}</p>
                             {!specialty.is_published && <span className="text-xs px-2 py-0.5 rounded-full" style={{ background: 'rgba(136,136,136,0.2)', color: '#CCCCCC' }}>Oculta</span>}
                           </div>
-                          <p className="text-xs" style={{ color: hasCover ? 'rgba(255,255,255,0.75)' : '#888888' }}>{videos.length} aula{videos.length !== 1 ? 's' : ''}</p>
+                          <p className="text-xs" style={{ color: hasCover ? 'rgba(255,255,255,0.75)' : '#888888' }}>{specModules.length} módulo{specModules.length !== 1 ? 's' : ''}</p>
                         </div>
                       </div>
-                      <button onClick={() => openNewLesson(specialty.id)}
-                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium transition-all hover:bg-white/10"
-                        style={{ color: '#C8FF00', border: '1px solid rgba(200,255,0,0.3)', background: hasCover ? 'rgba(0,0,0,0.3)' : 'transparent' }}>
-                        <Plus size={12} /> Vídeo
+                      <button onClick={() => openNewModule(specialty.id)} className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium transition-all hover:bg-white/10" style={{ color: '#C8FF00', border: '1px solid rgba(200,255,0,0.3)', background: hasCover ? 'rgba(0,0,0,0.3)' : 'transparent' }}>
+                        <FolderPlus size={12} /> Módulo
                       </button>
                     </div>
-                    {/* Vídeos */}
-                    <div className="p-3 flex flex-col gap-2">
-                      {videos.length === 0
-                        ? <p className="text-xs text-center py-4" style={{ color: hasCover ? 'rgba(255,255,255,0.6)' : '#555555' }}>Nenhum vídeo nesta especialidade ainda.</p>
-                        : videos.map((v, i) => renderVideo(v, i, videos))}
+
+                    {/* Módulos + Sem módulo */}
+                    <div className="p-3 flex flex-col gap-3">
+                      {specModules.length === 0 && semModulo.length === 0 && (
+                        <p className="text-xs text-center py-4" style={{ color: hasCover ? 'rgba(255,255,255,0.6)' : '#555555' }}>Nenhum módulo ainda. Crie o primeiro em “+ Módulo”.</p>
+                      )}
+
+                      {specModules.map((m, mi) => {
+                        const vids = lessons.filter(l => l.module_id === m.id)
+                        return (
+                          <div key={m.id} className="rounded-xl border" style={{ background: '#1F1F1F', borderColor: '#2A2A2A', opacity: m.is_published ? 1 : 0.6 }}>
+                            {/* Header do módulo */}
+                            <div className="flex items-center justify-between px-3 py-2.5 border-b" style={{ borderColor: '#2A2A2A' }}>
+                              <div className="flex items-center gap-2 min-w-0">
+                                <div className="flex flex-col gap-0.5">
+                                  <button disabled={mi === 0 || moveModule.isPending} onClick={() => moveModule.mutate({ list: specModules, index: mi, dir: -1 })} className="p-0.5 rounded hover:bg-white/10 disabled:opacity-30 disabled:cursor-not-allowed"><ChevronUp size={13} style={{ color: '#888888' }} /></button>
+                                  <button disabled={mi === specModules.length - 1 || moveModule.isPending} onClick={() => moveModule.mutate({ list: specModules, index: mi, dir: 1 })} className="p-0.5 rounded hover:bg-white/10 disabled:opacity-30 disabled:cursor-not-allowed"><ChevronDown size={13} style={{ color: '#888888' }} /></button>
+                                </div>
+                                <div className="min-w-0">
+                                  <div className="flex items-center gap-2">
+                                    <p className="text-sm font-semibold truncate" style={{ color: '#FFFFFF', fontFamily: 'Poppins, sans-serif' }}>{m.name}</p>
+                                    {!m.is_published && <span className="text-xs px-2 py-0.5 rounded-full flex-shrink-0" style={{ background: 'rgba(136,136,136,0.15)', color: '#888888' }}>Oculto</span>}
+                                    <span className="text-xs flex-shrink-0" style={{ color: '#555555' }}>· {vids.length} aula{vids.length !== 1 ? 's' : ''}</span>
+                                  </div>
+                                  {m.description && <p className="text-xs mt-0.5 truncate" style={{ color: '#888888' }}>{m.description}</p>}
+                                </div>
+                              </div>
+                              <div className="flex items-center gap-1.5 flex-shrink-0">
+                                <Switch checked={m.is_published} disabled={togglePublishModule.isPending} onCheckedChange={val => togglePublishModule.mutate({ id: m.id, val })} />
+                                <button onClick={() => openNewLesson(specialty.id, m.id)} className="flex items-center gap-1 px-2 py-1 rounded-lg text-xs transition-all hover:bg-white/10" style={{ color: '#C8FF00' }}><Plus size={11} /> Vídeo</button>
+                                <button onClick={() => openEditModule(m)} className="p-1.5 rounded-lg hover:bg-white/10" title="Editar módulo"><Pencil size={13} style={{ color: '#888888' }} /></button>
+                                <button onClick={() => { if (confirm(`Remover módulo "${m.name}"? Os vídeos ficam sem módulo.`)) removeModule.mutate(m.id) }} className="p-1.5 rounded-lg hover:bg-white/10" title="Remover módulo"><Trash2 size={13} style={{ color: '#EF4444' }} /></button>
+                              </div>
+                            </div>
+                            {/* Vídeos do módulo */}
+                            <div className="p-2.5 flex flex-col gap-2">
+                              {vids.length === 0 ? <p className="text-xs text-center py-3" style={{ color: '#555555' }}>Nenhum vídeo neste módulo.</p> : vids.map((v, i) => renderVideo(v, i, vids))}
+                            </div>
+                          </div>
+                        )
+                      })}
+
+                      {/* Sem módulo (vídeos antigos com specialty_id mas sem module_id) */}
+                      {semModulo.length > 0 && (
+                        <div className="rounded-xl border" style={{ background: '#1F1F1F', borderColor: '#2A2A2A' }}>
+                          <div className="px-3 py-2.5 border-b" style={{ borderColor: '#2A2A2A' }}>
+                            <p className="text-sm font-semibold" style={{ color: '#F59E0B', fontFamily: 'Poppins, sans-serif' }}>Sem módulo</p>
+                            <p className="text-xs mt-0.5" style={{ color: '#888888' }}>{semModulo.length} vídeo{semModulo.length !== 1 ? 's' : ''} — edite p/ atribuir a um módulo</p>
+                          </div>
+                          <div className="p-2.5 flex flex-col gap-2">{semModulo.map((v, i) => renderVideo(v, i, semModulo))}</div>
+                        </div>
+                      )}
                     </div>
                   </div>
                 </div>
               )
             })}
 
-            {/* Sem categoria */}
+            {/* Sem categoria (nem especialidade nem módulo) */}
             {uncategorized.length > 0 && (
               <div className="rounded-2xl border overflow-hidden" style={{ background: '#262626', borderColor: '#3D3D3D' }}>
                 <div className="flex items-center gap-3 px-4 py-3 border-b" style={{ borderColor: '#3D3D3D', borderLeft: '3px solid #555555' }}>
-                  <div className="w-9 h-9 rounded-xl flex items-center justify-center" style={{ background: 'rgba(136,136,136,0.15)' }}>
-                    <Layers size={18} style={{ color: '#888888' }} />
-                  </div>
+                  <div className="w-9 h-9 rounded-xl flex items-center justify-center" style={{ background: 'rgba(136,136,136,0.15)' }}><Layers size={18} style={{ color: '#888888' }} /></div>
                   <div>
                     <p className="text-sm font-semibold" style={{ color: '#FFFFFF', fontFamily: 'Poppins, sans-serif' }}>Sem categoria</p>
-                    <p className="text-xs" style={{ color: '#888888' }}>{uncategorized.length} aula{uncategorized.length !== 1 ? 's' : ''} sem especialidade</p>
+                    <p className="text-xs" style={{ color: '#888888' }}>{uncategorized.length} aula{uncategorized.length !== 1 ? 's' : ''} sem especialidade/módulo</p>
                   </div>
                 </div>
-                <div className="p-3 flex flex-col gap-2">
-                  {uncategorized.map((v, i) => renderVideo(v, i, uncategorized))}
-                </div>
+                <div className="p-3 flex flex-col gap-2">{uncategorized.map((v, i) => renderVideo(v, i, uncategorized))}</div>
               </div>
             )}
           </>
@@ -377,16 +434,28 @@ export default function VideoaulasPage() {
 
             <div>
               <label className={lblCls} style={{ color: '#555555' }}>Título *</label>
-              <input value={lessonForm.title} onChange={e => setLessonForm(p => ({ ...p, title: e.target.value }))} className={iCls} style={iStyle} placeholder="ex: Como montar seu prato" />
+              <input value={lessonForm.title} onChange={e => setLessonForm(p => ({ ...p, title: e.target.value }))} className={iCls} style={iStyle} placeholder="ex: Introdução aos hormônios" />
             </div>
 
-            <div>
-              <label className={lblCls} style={{ color: '#555555' }}>Especialidade</label>
-              <select value={lessonForm.specialty_id} onChange={e => setLessonForm(p => ({ ...p, specialty_id: e.target.value }))} className={iCls} style={iStyle}>
-                <option value="">— Sem categoria —</option>
-                {specialties.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
-              </select>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className={lblCls} style={{ color: '#555555' }}>Especialidade</label>
+                <select value={lessonForm.specialty_id} onChange={e => setLessonForm(p => ({ ...p, specialty_id: e.target.value, module_id: '' }))} className={iCls} style={iStyle}>
+                  <option value="">— Nenhuma —</option>
+                  {specialties.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+                </select>
+              </div>
+              <div>
+                <label className={lblCls} style={{ color: '#555555' }}>Módulo</label>
+                <select value={lessonForm.module_id} onChange={e => setLessonForm(p => ({ ...p, module_id: e.target.value }))} disabled={!lessonForm.specialty_id} className={iCls} style={{ ...iStyle, opacity: lessonForm.specialty_id ? 1 : 0.5 }}>
+                  <option value="">— Sem módulo —</option>
+                  {modulesForForm.map(m => <option key={m.id} value={m.id}>{m.name}</option>)}
+                </select>
+              </div>
             </div>
+            {lessonForm.specialty_id && modulesForForm.length === 0 && (
+              <p className="text-xs -mt-2" style={{ color: '#F59E0B' }}>Esta especialidade não tem módulos. Crie um em “+ Módulo” no card dela.</p>
+            )}
 
             <div>
               <label className={lblCls} style={{ color: '#555555' }}>Descrição</label>
@@ -413,6 +482,35 @@ export default function VideoaulasPage() {
         </div>
       )}
 
+      {/* ═══ Modal MÓDULO ═══ */}
+      {moduleModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: 'rgba(0,0,0,0.6)' }} onClick={() => setModuleModal(false)}>
+          <div className="w-full max-w-md rounded-2xl border p-5 flex flex-col gap-4" style={{ background: '#262626', borderColor: '#3D3D3D' }} onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-base font-semibold" style={{ color: '#FFFFFF', fontFamily: 'Poppins, sans-serif' }}>{moduleEditId ? 'Editar módulo' : 'Novo módulo'}</p>
+                <p className="text-xs mt-0.5" style={{ color: '#888888' }}>em {specialtyById.get(moduleSpecialtyId)?.name ?? 'especialidade'}</p>
+              </div>
+              <button onClick={() => setModuleModal(false)} className="p-1.5 rounded-lg hover:bg-white/10 transition-all"><X size={16} style={{ color: '#555555' }} /></button>
+            </div>
+            <div>
+              <label className={lblCls} style={{ color: '#555555' }}>Nome *</label>
+              <input value={moduleForm.name} onChange={e => setModuleForm(p => ({ ...p, name: e.target.value }))} className={iCls} style={iStyle} placeholder="ex: Hormônios" />
+            </div>
+            <div>
+              <label className={lblCls} style={{ color: '#555555' }}>Descrição</label>
+              <textarea value={moduleForm.description} onChange={e => setModuleForm(p => ({ ...p, description: e.target.value }))} rows={2} className={iCls + ' resize-none'} style={iStyle} placeholder="opcional" />
+            </div>
+            <div className="flex items-center justify-end gap-2 pt-1">
+              <button onClick={() => setModuleModal(false)} className="px-4 py-2 rounded-xl text-sm transition-all hover:bg-white/10" style={{ color: '#888888', border: '1px solid #2A2A2A' }}>Cancelar</button>
+              <Button onClick={() => saveModule.mutate()} disabled={saveModule.isPending} style={{ background: '#C8FF00', color: '#1C1C1C', borderRadius: '12px', fontFamily: 'Poppins, sans-serif', fontWeight: 600 }}>
+                {saveModule.isPending ? 'Salvando...' : moduleEditId ? 'Salvar' : 'Adicionar'}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* ═══ Modal ESPECIALIDADES ═══ */}
       {specModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: 'rgba(0,0,0,0.6)' }} onClick={() => setSpecModal(false)}>
@@ -422,7 +520,6 @@ export default function VideoaulasPage() {
               <button onClick={() => setSpecModal(false)} className="p-1.5 rounded-lg hover:bg-white/10 transition-all"><X size={16} style={{ color: '#555555' }} /></button>
             </div>
 
-            {/* Form add/editar */}
             <div className="rounded-xl border p-4 flex flex-col gap-3" style={{ background: '#1F1F1F', borderColor: '#2A2A2A' }}>
               <p className="text-xs font-semibold" style={{ color: '#C8FF00', fontFamily: 'Poppins, sans-serif' }}>{specEditId ? 'Editar especialidade' : 'Nova especialidade'}</p>
               <div>
@@ -435,9 +532,7 @@ export default function VideoaulasPage() {
                   {ICON_OPTIONS.map(({ key, Icon }) => {
                     const active = specForm.icon === key
                     return (
-                      <button key={key} onClick={() => setSpecForm(p => ({ ...p, icon: active ? '' : key }))}
-                        className="w-9 h-9 rounded-lg flex items-center justify-center transition-all"
-                        style={{ background: active ? 'rgba(200,255,0,0.15)' : '#1C1C1C', border: `1px solid ${active ? '#C8FF00' : '#3D3D3D'}` }}>
+                      <button key={key} onClick={() => setSpecForm(p => ({ ...p, icon: active ? '' : key }))} className="w-9 h-9 rounded-lg flex items-center justify-center transition-all" style={{ background: active ? 'rgba(200,255,0,0.15)' : '#1C1C1C', border: `1px solid ${active ? '#C8FF00' : '#3D3D3D'}` }}>
                         <Icon size={16} style={{ color: active ? '#C8FF00' : '#888888' }} />
                       </button>
                     )
@@ -449,11 +544,7 @@ export default function VideoaulasPage() {
                 <div className="flex flex-wrap gap-2 items-center">
                   {COLOR_OPTIONS.map(c => {
                     const active = specForm.color === c
-                    return (
-                      <button key={c} onClick={() => setSpecForm(p => ({ ...p, color: active ? '' : c }))}
-                        className="w-7 h-7 rounded-full transition-all" title={c}
-                        style={{ background: c, border: active ? '2px solid #FFFFFF' : '2px solid transparent', boxShadow: active ? `0 0 0 2px ${c}` : 'none' }} />
-                    )
+                    return <button key={c} onClick={() => setSpecForm(p => ({ ...p, color: active ? '' : c }))} className="w-7 h-7 rounded-full transition-all" title={c} style={{ background: c, border: active ? '2px solid #FFFFFF' : '2px solid transparent', boxShadow: active ? `0 0 0 2px ${c}` : 'none' }} />
                   })}
                   {specForm.color && <button onClick={() => setSpecForm(p => ({ ...p, color: '' }))} className="text-xs ml-1" style={{ color: '#888888' }}>limpar</button>}
                 </div>
@@ -467,41 +558,26 @@ export default function VideoaulasPage() {
                     <div className="absolute top-2 right-2 flex gap-2">
                       <label className="cursor-pointer px-2.5 py-1 rounded-lg text-xs font-medium transition-all hover:opacity-90" style={{ background: 'rgba(0,0,0,0.6)', color: '#FFFFFF' }}>
                         {uploadingCover ? 'Enviando...' : 'Trocar'}
-                        <input type="file" accept="image/jpeg,image/png,image/webp" className="hidden" disabled={uploadingCover}
-                          onChange={e => onPickCover(e.target.files?.[0] ?? null)} />
+                        <input type="file" accept="image/jpeg,image/png,image/webp" className="hidden" disabled={uploadingCover} onChange={e => onPickCover(e.target.files?.[0] ?? null)} />
                       </label>
-                      <button onClick={clearCover} className="px-2.5 py-1 rounded-lg text-xs font-medium transition-all hover:opacity-90" style={{ background: 'rgba(239,68,68,0.85)', color: '#FFFFFF' }}>
-                        Remover
-                      </button>
+                      <button onClick={clearCover} className="px-2.5 py-1 rounded-lg text-xs font-medium transition-all hover:opacity-90" style={{ background: 'rgba(239,68,68,0.85)', color: '#FFFFFF' }}>Remover</button>
                     </div>
                   </div>
                 ) : (
-                  <label className="flex flex-col items-center justify-center gap-1.5 rounded-xl border-2 border-dashed py-6 cursor-pointer transition-all hover:border-[#C8FF00] hover:bg-[rgba(200,255,0,0.03)]"
-                    style={{ borderColor: '#3D3D3D' }}>
-                    <input type="file" accept="image/jpeg,image/png,image/webp" className="hidden" disabled={uploadingCover}
-                      onChange={e => onPickCover(e.target.files?.[0] ?? null)} />
-                    {uploadingCover ? (
-                      <span className="text-xs" style={{ color: '#C8FF00' }}>Enviando...</span>
-                    ) : (
-                      <>
-                        <ImagePlus size={22} style={{ color: '#555555' }} />
-                        <span className="text-xs" style={{ color: '#888888' }}>Clique para enviar (JPG, PNG ou WebP · até 2MB)</span>
-                      </>
-                    )}
+                  <label className="flex flex-col items-center justify-center gap-1.5 rounded-xl border-2 border-dashed py-6 cursor-pointer transition-all hover:border-[#C8FF00] hover:bg-[rgba(200,255,0,0.03)]" style={{ borderColor: '#3D3D3D' }}>
+                    <input type="file" accept="image/jpeg,image/png,image/webp" className="hidden" disabled={uploadingCover} onChange={e => onPickCover(e.target.files?.[0] ?? null)} />
+                    {uploadingCover ? <span className="text-xs" style={{ color: '#C8FF00' }}>Enviando...</span> : (<><ImagePlus size={22} style={{ color: '#555555' }} /><span className="text-xs" style={{ color: '#888888' }}>Clique para enviar (JPG, PNG ou WebP · até 2MB)</span></>)}
                   </label>
                 )}
               </div>
-
               <div className="flex items-center justify-end gap-2">
                 {specEditId && <button onClick={resetSpecForm} className="px-3 py-1.5 rounded-lg text-xs transition-all hover:bg-white/10" style={{ color: '#888888', border: '1px solid #2A2A2A' }}>Cancelar edição</button>}
-                <Button size="sm" onClick={() => saveSpec.mutate()} disabled={saveSpec.isPending || uploadingCover}
-                  style={{ background: '#C8FF00', color: '#1C1C1C', borderRadius: '10px', fontFamily: 'Poppins, sans-serif', fontWeight: 600 }}>
+                <Button size="sm" onClick={() => saveSpec.mutate()} disabled={saveSpec.isPending || uploadingCover} style={{ background: '#C8FF00', color: '#1C1C1C', borderRadius: '10px', fontFamily: 'Poppins, sans-serif', fontWeight: 600 }}>
                   {saveSpec.isPending ? 'Salvando...' : specEditId ? 'Salvar' : 'Adicionar'}
                 </Button>
               </div>
             </div>
 
-            {/* Lista */}
             <div className="flex flex-col gap-2 overflow-y-auto">
               {specialties.length === 0 ? (
                 <p className="text-xs text-center py-4" style={{ color: '#555555' }}>Nenhuma especialidade criada.</p>
@@ -513,13 +589,11 @@ export default function VideoaulasPage() {
                       <button disabled={i === 0 || moveSpec.isPending} onClick={() => moveSpec.mutate({ index: i, dir: -1 })} className="p-0.5 rounded hover:bg-white/10 disabled:opacity-30 disabled:cursor-not-allowed"><ChevronUp size={13} style={{ color: '#888888' }} /></button>
                       <button disabled={i === specialties.length - 1 || moveSpec.isPending} onClick={() => moveSpec.mutate({ index: i, dir: 1 })} className="p-0.5 rounded hover:bg-white/10 disabled:opacity-30 disabled:cursor-not-allowed"><ChevronDown size={13} style={{ color: '#888888' }} /></button>
                     </div>
-                    <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0" style={{ background: `${color}1f` }}>
-                      <SpecialtyIcon name={s.icon} size={15} color={color} />
-                    </div>
+                    <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0" style={{ background: `${color}1f` }}><SpecialtyIcon name={s.icon} size={15} color={color} /></div>
                     <p className="flex-1 text-sm font-medium truncate" style={{ color: '#FFFFFF' }}>{s.name}</p>
                     <Switch checked={s.is_published} disabled={togglePublishSpec.isPending} onCheckedChange={val => togglePublishSpec.mutate({ id: s.id, val })} />
                     <button onClick={() => editSpec(s)} className="p-1.5 rounded-lg hover:bg-white/10" title="Editar"><Pencil size={13} style={{ color: '#888888' }} /></button>
-                    <button onClick={() => { if (confirm(`Remover "${s.name}"? Os vídeos ficam sem categoria.`)) removeSpec.mutate(s) }} className="p-1.5 rounded-lg hover:bg-white/10" title="Remover"><Trash2 size={13} style={{ color: '#EF4444' }} /></button>
+                    <button onClick={() => { if (confirm(`Remover "${s.name}"? Os módulos dela são apagados e os vídeos ficam sem categoria.`)) removeSpec.mutate(s) }} className="p-1.5 rounded-lg hover:bg-white/10" title="Remover"><Trash2 size={13} style={{ color: '#EF4444' }} /></button>
                   </div>
                 )
               })}
