@@ -1,10 +1,20 @@
 import { supabase } from '@/lib/supabase/client'
 import { Specialty } from '@/types'
 
+const COVERS_BUCKET = 'specialty-covers'
+
 export type SpecialtyInput = {
   name: string
   icon?: string | null
   color?: string | null
+  image_url?: string | null
+}
+
+// Extrai o caminho do objeto dentro do bucket a partir da URL pública.
+export function coverPathFromUrl(url: string): string | null {
+  const marker = `/${COVERS_BUCKET}/`
+  const i = url.indexOf(marker)
+  return i === -1 ? null : decodeURIComponent(url.slice(i + marker.length))
 }
 
 export const specialtyService = {
@@ -27,6 +37,7 @@ export const specialtyService = {
         name: input.name,
         icon: input.icon || null,
         color: input.color || null,
+        image_url: input.image_url || null,
         sort_order: sortOrder,
         created_by: nutriId,
         updated_at: new Date().toISOString(),
@@ -36,6 +47,24 @@ export const specialtyService = {
 
     if (error || !data) throw new Error(error?.message ?? 'Erro ao criar especialidade')
     return data as Specialty
+  },
+
+  // Upload da capa → retorna a URL pública. Nome único p/ não sobrescrever.
+  async uploadCover(file: File): Promise<string> {
+    const ext = (file.name.split('.').pop() || 'jpg').toLowerCase()
+    const path = `${crypto.randomUUID()}.${ext}`
+    const { error } = await supabase.storage
+      .from(COVERS_BUCKET)
+      .upload(path, file, { cacheControl: '3600', upsert: false, contentType: file.type })
+    if (error) throw new Error(error.message)
+    return supabase.storage.from(COVERS_BUCKET).getPublicUrl(path).data.publicUrl
+  },
+
+  // Apaga o arquivo da capa no bucket (best-effort). Recebe a URL pública.
+  async removeCover(url: string): Promise<void> {
+    const path = coverPathFromUrl(url)
+    if (!path) return
+    await supabase.storage.from(COVERS_BUCKET).remove([path])
   },
 
   async update(

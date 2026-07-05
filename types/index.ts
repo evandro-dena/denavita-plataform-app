@@ -215,6 +215,7 @@ export interface Specialty {
   name: string
   icon?: string | null
   color?: string | null
+  image_url?: string | null
   sort_order: number
   is_published: boolean
   created_by: string

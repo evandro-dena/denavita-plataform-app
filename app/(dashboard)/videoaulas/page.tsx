@@ -10,7 +10,7 @@ import { Button } from '@/components/ui/button'
 import { Switch } from '@/components/ui/switch'
 import { Skeleton } from '@/components/ui/skeleton'
 import {
-  Plus, Pencil, Trash2, ChevronUp, ChevronDown, Video, X, ExternalLink,
+  Plus, Pencil, Trash2, ChevronUp, ChevronDown, Video, X, ExternalLink, ImagePlus,
   Layers, Settings2, UtensilsCrossed, Brain, Dumbbell, Heart, BookOpen, Activity, Salad, Sparkles,
 } from 'lucide-react'
 import { toast } from 'sonner'
@@ -121,22 +121,54 @@ export default function VideoaulasPage() {
   // ═══ Modal de ESPECIALIDADES (gestão) ═════════════════════════════
   const [specModal, setSpecModal] = useState(false)
   const [specEditId, setSpecEditId] = useState<string | null>(null)
-  const [specForm, setSpecForm] = useState<{ name: string; icon: string; color: string }>({ name: '', icon: '', color: '' })
+  const [specForm, setSpecForm] = useState<{ name: string; icon: string; color: string; image_url: string }>({ name: '', icon: '', color: '', image_url: '' })
+  const [specOriginalImage, setSpecOriginalImage] = useState('') // capa ao abrir edição (p/ limpar do bucket se trocar)
+  const [uploadingCover, setUploadingCover] = useState(false)
 
-  const resetSpecForm = () => { setSpecEditId(null); setSpecForm({ name: '', icon: '', color: '' }) }
-  const editSpec = (s: Specialty) => { setSpecEditId(s.id); setSpecForm({ name: s.name, icon: s.icon ?? '', color: s.color ?? '' }) }
+  const resetSpecForm = () => {
+    setSpecEditId(null)
+    setSpecForm({ name: '', icon: '', color: '', image_url: '' })
+    setSpecOriginalImage('')
+  }
+  const editSpec = (s: Specialty) => {
+    setSpecEditId(s.id)
+    setSpecForm({ name: s.name, icon: s.icon ?? '', color: s.color ?? '', image_url: s.image_url ?? '' })
+    setSpecOriginalImage(s.image_url ?? '')
+  }
+
+  const onPickCover = async (file: File | null) => {
+    if (!file) return
+    if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type)) { toast.error('Formato inválido. Use JPG, PNG ou WebP.'); return }
+    if (file.size > 2 * 1024 * 1024) { toast.error('Imagem acima de 2MB. Use uma menor.'); return }
+    setUploadingCover(true)
+    try {
+      const url = await specialtyService.uploadCover(file)
+      setSpecForm(p => ({ ...p, image_url: url }))
+      toast.success('Capa enviada!')
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : 'Falha no upload da capa')
+    } finally {
+      setUploadingCover(false)
+    }
+  }
+  const clearCover = () => setSpecForm(p => ({ ...p, image_url: '' }))
 
   const saveSpec = useMutation({
     mutationFn: async () => {
       const name = specForm.name.trim()
       if (!name) throw new Error('Informe o nome da especialidade')
-      const patch = { name, icon: specForm.icon || null, color: specForm.color || null }
+      const image_url = specForm.image_url || null
+      const patch = { name, icon: specForm.icon || null, color: specForm.color || null, image_url }
       if (specEditId) {
         await specialtyService.update(specEditId, patch)
       } else {
         if (!NUTRI_ID) throw new Error('Sessão ainda carregando, tente de novo')
         const nextOrder = specialties.reduce((m, s) => Math.max(m, s.sort_order), -1) + 1
         await specialtyService.create(patch, NUTRI_ID, nextOrder)
+      }
+      // Trocou/removeu a capa → apaga o arquivo antigo do bucket (best-effort).
+      if (specOriginalImage && specOriginalImage !== (image_url ?? '')) {
+        specialtyService.removeCover(specOriginalImage).catch(() => {})
       }
     },
     onSuccess: () => {
@@ -148,7 +180,10 @@ export default function VideoaulasPage() {
   })
 
   const removeSpec = useMutation({
-    mutationFn: (id: string) => specialtyService.remove(id),
+    mutationFn: async (s: Specialty) => {
+      await specialtyService.remove(s.id)
+      if (s.image_url) specialtyService.removeCover(s.image_url).catch(() => {}) // limpa a capa do bucket
+    },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['specialties'] })
       qc.invalidateQueries({ queryKey: ['video-lessons'] }) // vídeos ficam sem categoria (FK ON DELETE SET NULL)
@@ -266,34 +301,45 @@ export default function VideoaulasPage() {
           <>
             {groups.map(({ specialty, videos }) => {
               const color = specialty.color || DEFAULT_COLOR
+              const hasCover = !!specialty.image_url
               return (
-                <div key={specialty.id} className="rounded-2xl border overflow-hidden"
-                  style={{ background: '#262626', borderColor: '#3D3D3D', opacity: specialty.is_published ? 1 : 0.6 }}>
-                  {/* Header do card */}
-                  <div className="flex items-center justify-between px-4 py-3 border-b" style={{ borderColor: '#3D3D3D', borderLeft: `3px solid ${color}` }}>
-                    <div className="flex items-center gap-3">
-                      <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: `${color}1f` }}>
-                        <SpecialtyIcon name={specialty.icon} size={18} color={color} />
-                      </div>
-                      <div>
-                        <div className="flex items-center gap-2">
-                          <p className="text-sm font-semibold" style={{ color: '#FFFFFF', fontFamily: 'Poppins, sans-serif' }}>{specialty.name}</p>
-                          {!specialty.is_published && <span className="text-xs px-2 py-0.5 rounded-full" style={{ background: 'rgba(136,136,136,0.15)', color: '#888888' }}>Oculta</span>}
+                <div key={specialty.id} className="rounded-2xl border overflow-hidden relative"
+                  style={{
+                    background: '#262626',
+                    borderColor: '#3D3D3D',
+                    opacity: specialty.is_published ? 1 : 0.6,
+                    ...(hasCover ? { backgroundImage: `url(${specialty.image_url})`, backgroundSize: 'cover', backgroundPosition: 'center' } : {}),
+                  }}>
+                  {/* Overlay escuro por cima da capa (legibilidade) */}
+                  {hasCover && <div className="absolute inset-0 pointer-events-none" style={{ background: 'linear-gradient(180deg, rgba(0,0,0,0.55) 0%, rgba(28,28,28,0.92) 100%)' }} />}
+
+                  <div className="relative">
+                    {/* Header do card */}
+                    <div className="flex items-center justify-between px-4 py-3 border-b" style={{ borderColor: hasCover ? 'rgba(255,255,255,0.12)' : '#3D3D3D', borderLeft: `3px solid ${color}` }}>
+                      <div className="flex items-center gap-3">
+                        <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: hasCover ? 'rgba(0,0,0,0.35)' : `${color}1f` }}>
+                          <SpecialtyIcon name={specialty.icon} size={18} color={color} />
                         </div>
-                        <p className="text-xs" style={{ color: '#888888' }}>{videos.length} aula{videos.length !== 1 ? 's' : ''}</p>
+                        <div>
+                          <div className="flex items-center gap-2">
+                            <p className="text-sm font-semibold" style={{ color: '#FFFFFF', fontFamily: 'Poppins, sans-serif', textShadow: hasCover ? '0 1px 4px rgba(0,0,0,0.85)' : undefined }}>{specialty.name}</p>
+                            {!specialty.is_published && <span className="text-xs px-2 py-0.5 rounded-full" style={{ background: 'rgba(136,136,136,0.2)', color: '#CCCCCC' }}>Oculta</span>}
+                          </div>
+                          <p className="text-xs" style={{ color: hasCover ? 'rgba(255,255,255,0.75)' : '#888888' }}>{videos.length} aula{videos.length !== 1 ? 's' : ''}</p>
+                        </div>
                       </div>
+                      <button onClick={() => openNewLesson(specialty.id)}
+                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium transition-all hover:bg-white/10"
+                        style={{ color: '#C8FF00', border: '1px solid rgba(200,255,0,0.3)', background: hasCover ? 'rgba(0,0,0,0.3)' : 'transparent' }}>
+                        <Plus size={12} /> Vídeo
+                      </button>
                     </div>
-                    <button onClick={() => openNewLesson(specialty.id)}
-                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium transition-all hover:bg-white/10"
-                      style={{ color: '#C8FF00', border: '1px solid rgba(200,255,0,0.3)' }}>
-                      <Plus size={12} /> Vídeo
-                    </button>
-                  </div>
-                  {/* Vídeos */}
-                  <div className="p-3 flex flex-col gap-2">
-                    {videos.length === 0
-                      ? <p className="text-xs text-center py-4" style={{ color: '#555555' }}>Nenhum vídeo nesta especialidade ainda.</p>
-                      : videos.map((v, i) => renderVideo(v, i, videos))}
+                    {/* Vídeos */}
+                    <div className="p-3 flex flex-col gap-2">
+                      {videos.length === 0
+                        ? <p className="text-xs text-center py-4" style={{ color: hasCover ? 'rgba(255,255,255,0.6)' : '#555555' }}>Nenhum vídeo nesta especialidade ainda.</p>
+                        : videos.map((v, i) => renderVideo(v, i, videos))}
+                    </div>
                   </div>
                 </div>
               )
@@ -412,9 +458,43 @@ export default function VideoaulasPage() {
                   {specForm.color && <button onClick={() => setSpecForm(p => ({ ...p, color: '' }))} className="text-xs ml-1" style={{ color: '#888888' }}>limpar</button>}
                 </div>
               </div>
+              <div>
+                <label className={lblCls} style={{ color: '#555555' }}>Capa (opcional)</label>
+                {specForm.image_url ? (
+                  <div className="relative rounded-xl overflow-hidden" style={{ border: '1px solid #3D3D3D' }}>
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src={specForm.image_url} alt="capa" className="w-full h-32 object-cover" />
+                    <div className="absolute top-2 right-2 flex gap-2">
+                      <label className="cursor-pointer px-2.5 py-1 rounded-lg text-xs font-medium transition-all hover:opacity-90" style={{ background: 'rgba(0,0,0,0.6)', color: '#FFFFFF' }}>
+                        {uploadingCover ? 'Enviando...' : 'Trocar'}
+                        <input type="file" accept="image/jpeg,image/png,image/webp" className="hidden" disabled={uploadingCover}
+                          onChange={e => onPickCover(e.target.files?.[0] ?? null)} />
+                      </label>
+                      <button onClick={clearCover} className="px-2.5 py-1 rounded-lg text-xs font-medium transition-all hover:opacity-90" style={{ background: 'rgba(239,68,68,0.85)', color: '#FFFFFF' }}>
+                        Remover
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <label className="flex flex-col items-center justify-center gap-1.5 rounded-xl border-2 border-dashed py-6 cursor-pointer transition-all hover:border-[#C8FF00] hover:bg-[rgba(200,255,0,0.03)]"
+                    style={{ borderColor: '#3D3D3D' }}>
+                    <input type="file" accept="image/jpeg,image/png,image/webp" className="hidden" disabled={uploadingCover}
+                      onChange={e => onPickCover(e.target.files?.[0] ?? null)} />
+                    {uploadingCover ? (
+                      <span className="text-xs" style={{ color: '#C8FF00' }}>Enviando...</span>
+                    ) : (
+                      <>
+                        <ImagePlus size={22} style={{ color: '#555555' }} />
+                        <span className="text-xs" style={{ color: '#888888' }}>Clique para enviar (JPG, PNG ou WebP · até 2MB)</span>
+                      </>
+                    )}
+                  </label>
+                )}
+              </div>
+
               <div className="flex items-center justify-end gap-2">
                 {specEditId && <button onClick={resetSpecForm} className="px-3 py-1.5 rounded-lg text-xs transition-all hover:bg-white/10" style={{ color: '#888888', border: '1px solid #2A2A2A' }}>Cancelar edição</button>}
-                <Button size="sm" onClick={() => saveSpec.mutate()} disabled={saveSpec.isPending}
+                <Button size="sm" onClick={() => saveSpec.mutate()} disabled={saveSpec.isPending || uploadingCover}
                   style={{ background: '#C8FF00', color: '#1C1C1C', borderRadius: '10px', fontFamily: 'Poppins, sans-serif', fontWeight: 600 }}>
                   {saveSpec.isPending ? 'Salvando...' : specEditId ? 'Salvar' : 'Adicionar'}
                 </Button>
@@ -439,7 +519,7 @@ export default function VideoaulasPage() {
                     <p className="flex-1 text-sm font-medium truncate" style={{ color: '#FFFFFF' }}>{s.name}</p>
                     <Switch checked={s.is_published} disabled={togglePublishSpec.isPending} onCheckedChange={val => togglePublishSpec.mutate({ id: s.id, val })} />
                     <button onClick={() => editSpec(s)} className="p-1.5 rounded-lg hover:bg-white/10" title="Editar"><Pencil size={13} style={{ color: '#888888' }} /></button>
-                    <button onClick={() => { if (confirm(`Remover "${s.name}"? Os vídeos ficam sem categoria.`)) removeSpec.mutate(s.id) }} className="p-1.5 rounded-lg hover:bg-white/10" title="Remover"><Trash2 size={13} style={{ color: '#EF4444' }} /></button>
+                    <button onClick={() => { if (confirm(`Remover "${s.name}"? Os vídeos ficam sem categoria.`)) removeSpec.mutate(s) }} className="p-1.5 rounded-lg hover:bg-white/10" title="Remover"><Trash2 size={13} style={{ color: '#EF4444' }} /></button>
                   </div>
                 )
               })}
